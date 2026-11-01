@@ -64,7 +64,7 @@ let currentUser = null;
 // ============================================================================
 
 const BACKEND_CONFIG = {
-  baseUrl: "http://localhost:8000",
+  baseUrl: (window.location && window.location.origin && window.location.origin.startsWith("http")) ? window.location.origin : "http://localhost:8000",
   isOnline: false,
   device: "CPU",
   modelName: "RT-DETR-L (85 Epochs)",
@@ -143,17 +143,17 @@ async function checkBackendConnection() {
 const SURVEYS_DATABASE = [
   {
     id: "SURV-2026-001",
-    corridor: "Agra Cantt Fast-Line (KM 88.200 - 90.100)",
+    corridor: "Waltair Mainline (KM 120.100 - 122.200) • 18°18'59.8\"N 83°34'10.7\"E",
     date: "2026-10-30",
     pilot: "Capt. R. Sharma (IR-8821)",
-    clearanceGang: "Gang 08 (JE P-Way M. Kumar)",
+    clearanceGang: "Gang 08 (Waltair Division)",
     status: "CLEARED_100%",
     statusLabel: "✓ 100% Cleared",
     statusClass: "badge-green",
     coordinates: [
-      [27.1767, 78.0081],
-      [27.1780, 78.0105],
-      [27.1802, 78.0140]
+      [18.3142, 83.5678],
+      [18.3154, 83.5687],
+      [18.316611, 83.569639]
     ],
     defects: [
       {
@@ -161,9 +161,9 @@ const SURVEYS_DATABASE = [
         name: "Damaged Fastener",
         category: "fastener",
         severity: "MEDIUM",
-        chainage: "KM 88.350",
-        lat: 27.1772,
-        lon: 78.0090,
+        chainage: "KM 120.350",
+        lat: 18.3148,
+        lon: 83.5682,
         action: "IRPWM Para 257: Replace Pandrol e-clip",
         cleared: true,
         clearedAt: "2026-10-30 14:22",
@@ -174,9 +174,9 @@ const SURVEYS_DATABASE = [
         name: "Rail Wear",
         category: "rail",
         severity: "LOW",
-        chainage: "KM 89.120",
-        lat: 27.1795,
-        lon: 78.0125,
+        chainage: "KM 121.120",
+        lat: 18.3158,
+        lon: 83.5690,
         action: "IRPWM Para 302: Rail profile grinding",
         cleared: true,
         clearedAt: "2026-10-30 16:45",
@@ -186,17 +186,17 @@ const SURVEYS_DATABASE = [
   },
   {
     id: "SURV-2026-002",
-    corridor: "Rewari-Jaipur Chord (KM 45.000 - 47.200)",
+    corridor: "Waltair Chord (KM 122.900 - 124.500) • 18°18'59.8\"N 83°34'10.7\"E",
     date: "2026-10-31",
     pilot: "Capt. S. Khan (IR-9104)",
-    clearanceGang: "Gang 14 (JE P-Way S. Yadav)",
+    clearanceGang: "Gang 14 (Waltair Division)",
     status: "CLEARED_100%",
     statusLabel: "✓ 100% Cleared",
     statusClass: "badge-green",
     coordinates: [
-      [28.1950, 76.6180],
-      [28.1980, 76.6210],
-      [28.2010, 76.6250]
+      [18.316611, 83.569639],
+      [18.3178, 83.5705],
+      [18.3190, 83.5714]
     ],
     defects: [
       {
@@ -204,9 +204,9 @@ const SURVEYS_DATABASE = [
         name: "Ballast Defect",
         category: "ballast",
         severity: "LOW",
-        chainage: "KM 45.600",
-        lat: 28.1965,
-        lon: 76.6195,
+        chainage: "KM 123.600",
+        lat: 18.3172,
+        lon: 83.5701,
         action: "IRPWM Para 223: Ballast packing & tamping",
         cleared: true,
         clearedAt: "2026-10-31 11:30",
@@ -216,63 +216,21 @@ const SURVEYS_DATABASE = [
   },
   {
     id: "SURV-2026-LIVE",
-    corridor: "Delhi-Mathura Mainline (KM 122.400 - 122.800)",
+    corridor: "Waltair Mainline (KM 122.400 - 122.800) • 18°18'59.8\"N 83°34'10.7\"E",
     date: "2026-11-01 (Today)",
     pilot: "Capt. A. Verma (IR-9921)",
-    clearanceGang: "Gang 12 (Sub-division Agra North)",
+    clearanceGang: "Gang 12 (Sub-division Waltair)",
     status: "IN_SURVEY",
     statusLabel: "● In Active Survey",
     statusClass: "badge-cyan",
     coordinates: [
-      [28.6138, 77.2085],
-      [28.6148, 77.2096],
-      [28.6158, 77.2104],
-      [28.6175, 77.2120]
+      [18.315000, 83.568400],
+      [18.315800, 83.569000],
+      [18.316611, 83.569639],
+      [18.317400, 83.570200],
+      [18.318200, 83.570800]
     ],
-    defects: [
-      {
-        id: "DEF-101",
-        name: "Rail Wear (Gauge Flow)",
-        category: "rail",
-        severity: "LOW",
-        conf: 0.88,
-        box: [0.18, 0.42, 0.32, 0.65],
-        chainage: "KM 122.400",
-        lat: 28.6148,
-        lon: 77.2096,
-        action: "IRPWM Para 302: Schedule Rail Grinding within 90 days",
-        cleared: false,
-        verified: true
-      },
-      {
-        id: "DEF-102",
-        name: "Damaged Fastener (Clip Bend)",
-        category: "fastener",
-        severity: "MEDIUM",
-        conf: 0.79,
-        box: [0.45, 0.52, 0.52, 0.61],
-        chainage: "KM 122.415",
-        lat: 28.6152,
-        lon: 77.2099,
-        action: "IRPWM Para 257: Replace Pandrol e-clip at next gang inspection",
-        cleared: false,
-        verified: true
-      },
-      {
-        id: "DEF-103",
-        name: "Rail Crack (Transverse)",
-        category: "rail",
-        severity: "CRITICAL",
-        conf: 0.91,
-        box: [0.68, 0.38, 0.78, 0.49],
-        chainage: "KM 122.430",
-        lat: 28.6158,
-        lon: 77.2104,
-        action: "IRPWM Para 241: Emergency Speed Restriction (30 km/h) & Clamp Fishplates",
-        cleared: false,
-        verified: true
-      }
-    ]
+    defects: []
   }
 ];
 
@@ -309,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initClearanceWorkspace();
   initModals();
   initCustomUploads();
-  initCertificateModal();
+  initCropZoomModal();
   initSqlSchemaUI();
   checkBackendConnection();
 
@@ -614,7 +572,10 @@ function renderAdminView() {
   updateAdminKPIs();
   updateAnalyticsWidgets();
   renderAdminSurveysTable();
-  setTimeout(initOrUpdateAdminMap, 200);
+  setTimeout(initOrUpdateAdminMap, 150);
+  setTimeout(() => {
+    if (adminMap) adminMap.invalidateSize();
+  }, 350);
 }
 
 function updateAdminKPIs() {
@@ -733,19 +694,37 @@ function initOrUpdateAdminMap() {
   const container = document.getElementById("adminMapContainer");
   if (!container) return;
 
-  if (!adminMap) {
-    adminMap = L.map('adminMapContainer').setView([28.6148, 77.2096], 14);
+  const targetLat = 18.316611;
+  const targetLon = 83.569639;
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+  if (!adminMap) {
+    adminMap = L.map('adminMapContainer').setView([targetLat, targetLon], 17);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Esri Satellite',
       maxZoom: 19
     }).addTo(adminMap);
   } else {
+    adminMap.setView([targetLat, targetLon], 17);
     adminMap.invalidateSize();
   }
 
   adminCorridorLayers.forEach(l => adminMap.removeLayer(l));
   adminCorridorLayers = [];
+
+  // Dedicated Target Location Pin: 18°18'59.8"N 83°34'10.7"E
+  const targetPin = L.marker([targetLat, targetLon], {
+    title: '18°18\'59.8"N 83°34\'10.7"E'
+  }).addTo(adminMap);
+  targetPin.bindPopup(`
+    <div style="font-family: 'Inter', sans-serif; font-size: 13px; color: #0f172a; line-height: 1.4;">
+      <strong style="color: #0284c7;">📍 Active Inspection Target</strong><br>
+      <span style="font-weight: 700; color: #000;">18°18'59.8"N 83°34'10.7"E</span><br>
+      <span style="font-size: 11px; color: #475569;">[${targetLat.toFixed(6)}, ${targetLon.toFixed(6)}]</span><br>
+      <span style="font-size: 11px; color: #16a34a; font-weight: 600;">Waltair Division Corridor</span>
+    </div>
+  `).openPopup();
+  adminCorridorLayers.push(targetPin);
 
   SURVEYS_DATABASE.forEach(s => {
     let color = "#10b981";
@@ -770,7 +749,7 @@ function initOrUpdateAdminMap() {
     adminCorridorLayers.push(poly);
 
     if (s.status === "IN_SURVEY") {
-      const droneHead = s.coordinates[s.coordinates.length - 1];
+      const droneHead = [targetLat, targetLon];
       const droneMarker = L.circleMarker(droneHead, {
         radius: 10,
         fillColor: "#06b6d4",
@@ -778,15 +757,35 @@ function initOrUpdateAdminMap() {
         weight: 3,
         fillOpacity: 0.9
       }).addTo(adminMap);
-      droneMarker.bindPopup("<strong>DRONE FLIGHT 104</strong><br>Capturing 4K SAHI video stream.");
+      droneMarker.bindPopup("<strong>DRONE FLIGHT 104</strong><br>18°18'59.8\"N 83°34'10.7\"E<br>Capturing 4K SAHI video stream.");
       adminCorridorLayers.push(droneMarker);
     }
+
+    // Plot hazard defect points matching HUD bar (Red Pins / Amber Pins)
+    s.defects.forEach(d => {
+      if (d.lat && d.lon) {
+        const pinColor = d.cleared ? '#10b981' : (d.severity === 'CRITICAL' ? '#ef4444' : '#fbbf24');
+        const marker = L.circleMarker([d.lat, d.lon], {
+          radius: d.severity === 'CRITICAL' ? 7 : 5,
+          fillColor: pinColor,
+          color: '#ffffff',
+          weight: 2,
+          fillOpacity: 0.95
+        }).addTo(adminMap);
+        marker.bindPopup(`
+          <div style="font-family: 'Inter', sans-serif; font-size: 12px; color: #0f172a;">
+            <strong style="color: ${pinColor};">${d.id} • ${d.name}</strong><br>
+            <span>KM: ${d.chainage || '122.400'}</span><br>
+            <span>Severity: <strong>${d.severity}</strong></span><br>
+            <span>Status: ${d.cleared ? 'Cleared' : 'Pending'}</span>
+          </div>
+        `);
+        adminCorridorLayers.push(marker);
+      }
+    });
   });
 
-  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
-  if (liveSurvey) {
-    adminMap.setView(liveSurvey.coordinates[1], 15);
-  }
+  adminMap.setView([targetLat, targetLon], 17);
 }
 
 // ============================================================================
@@ -801,7 +800,21 @@ function initOperatorWorkspace() {
       document.querySelectorAll(".op-tab-content").forEach(c => c.classList.remove("active"));
       btn.classList.add("active");
       const targetId = btn.getAttribute("data-optab");
-      document.getElementById(targetId).classList.add("active");
+      const targetEl = document.getElementById(targetId);
+      if (targetEl) targetEl.classList.add("active");
+
+      if (targetId === "op-video-view") {
+        setTimeout(() => {
+          resizeVideoCanvas();
+          if (!currentVideoTracks || currentVideoTracks.length === 0) {
+            runVideoInspection();
+          }
+        }, 60);
+      } else if (targetId === "op-still-view") {
+        setTimeout(() => {
+          drawBoundingBoxes();
+        }, 60);
+      }
     });
   });
 
@@ -831,7 +844,8 @@ function initCustomUploads() {
         if (nameDisp) nameDisp.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
         const objectUrl = URL.createObjectURL(file);
         imgEl.onload = () => {
-          document.getElementById("resHudText").textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
+          const resHud = document.getElementById("resHudText");
+          if (resHud) resHud.textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
           imgEl.onload = () => drawBoundingBoxes();
           runModelInferencePipeline(file);
         };
@@ -851,7 +865,8 @@ function initCustomUploads() {
         const url = URL.createObjectURL(file);
         vidEl.src = url;
         vidEl.play();
-        showToast("Patrol Video Loaded", `${file.name} ready for inspection`, "success");
+        showToast("Patrol Video Loaded", `${file.name} loaded. Launching AI inference...`, "info");
+        runVideoInspection();
       }
     });
   }
@@ -926,7 +941,8 @@ function initStillCanvas() {
 
   document.getElementById("toggleBBoxBtn").addEventListener("click", () => {
     showBBoxes = !showBBoxes;
-    document.getElementById("bboxStatusText").textContent = showBBoxes ? "Visible" : "Hidden";
+    const bboxStatus = document.getElementById("bboxStatusText");
+    if (bboxStatus) bboxStatus.textContent = showBBoxes ? "Visible" : "Hidden";
     drawBoundingBoxes();
   });
 
@@ -1000,67 +1016,218 @@ function drawBoundingBoxes() {
 }
 
 function renderOperatorDefectsList() {
-  const listEl = document.getElementById("operatorDefectsList");
-  const tallyEl = document.getElementById("operatorVerifiedTally");
-  if (!listEl) return;
-
-  listEl.innerHTML = "";
+  const listEl1 = document.getElementById("operatorDefectsList");
+  const listEl2 = document.getElementById("operatorDefectsListVideo");
+  const tallyEl1 = document.getElementById("operatorVerifiedTally");
+  const tallyEl2 = document.getElementById("operatorVerifiedTallyVideo");
 
   const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
-  if (!liveSurvey) return;
-
-  const verifiedCount = liveSurvey.defects.filter(d => d.verified).length;
-  tallyEl.textContent = `${verifiedCount} Verified`;
-
-  liveSurvey.defects.forEach(d => {
-    const card = document.createElement("div");
-    card.className = "punch-card";
-
-    let sevClass = d.severity === "CRITICAL" ? "sev-high" : (d.severity === "MEDIUM" ? "sev-med" : "sev-low");
-
-    card.innerHTML = `
-      <div class="punch-card-header">
-        <div>
-          <strong style="color: #fff; font-size: 13px;">${d.id} • ${d.name}</strong>
-          <div style="font-size: 11px; color: var(--text-muted);">${d.chainage} • ${(d.conf * 100).toFixed(0)}% Conf</div>
-        </div>
-        <span class="sev-pill ${sevClass}">${d.severity}</span>
-      </div>
-      <div style="font-size: 11px; color: #94a3b8;">${d.action}</div>
-      <div class="punch-action-bar">
-        <span style="font-size: 11px; color: ${d.verified ? '#34d399' : '#f87171'};">
-          ${d.verified ? '✓ Verified by Pilot' : '✗ Marked False Alarm'}
-        </span>
-        <button class="btn-secondary" onclick="toggleOperatorVerification('${d.id}')" style="padding: 4px 8px; font-size: 11px;">
-          ${d.verified ? 'Reject' : 'Verify'}
-        </button>
+  if (!liveSurvey || !Array.isArray(liveSurvey.defects) || liveSurvey.defects.length === 0) {
+    const emptyHtml = `
+      <div style="text-align: center; padding: 26px 12px; color: var(--text-muted); font-size: 12px; font-style: italic; background: var(--bg-subtle); border: 1px dashed var(--border-color); border-radius: 8px;">
+        No defects detected yet. Upload drone orthophoto or launch patrol video inspection to populate live findings.
       </div>
     `;
-    listEl.appendChild(card);
-  });
+    if (tallyEl1) tallyEl1.textContent = "0 Verified";
+    if (tallyEl2) tallyEl2.textContent = "0 Verified";
+    if (listEl1) listEl1.innerHTML = emptyHtml;
+    if (listEl2) listEl2.innerHTML = emptyHtml;
+    return;
+  }
+
+  const verifiedCount = liveSurvey.defects.filter(d => d.verified !== false).length;
+  if (tallyEl1) tallyEl1.textContent = `${verifiedCount} Verified`;
+  if (tallyEl2) tallyEl2.textContent = `${verifiedCount} Verified`;
+
+  const cardsHtml = liveSurvey.defects.map(d => {
+    let sevClass = d.severity === "CRITICAL" ? "sev-high" : (d.severity === "MEDIUM" ? "sev-med" : "sev-low");
+    const confVal = d.conf ? `${Math.round(d.conf * 100)}% Conf` : (d.confidence_pct || "85% Conf");
+    const cleanAction = (d.action || "Standard track inspection & maintenance").replace(/^IRPWM\s+Para\s+\d+:\s*/i, "");
+
+    return `
+      <div class="operator-defect-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+          <strong class="operator-defect-title">${d.id} • ${d.raw_name || d.name}</strong>
+          <span class="sev-pill ${sevClass}">${d.severity}</span>
+        </div>
+        <div class="operator-defect-conf">${confVal}</div>
+        <div class="operator-defect-action">${cleanAction}</div>
+        <div class="punch-action-bar" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 6px;">
+          <span style="font-size: 11px; font-weight: 800; color: ${d.verified !== false ? '#10b981' : '#ef4444'};">
+            ${d.verified !== false ? '✓ Verified by Pilot' : '✗ Marked False Alarm'}
+          </span>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-verify-accept ${d.verified !== false ? 'active' : ''}" onclick="setOperatorVerification('${d.id}', true)">Accept</button>
+            <button class="btn-verify-reject ${d.verified === false ? 'active' : ''}" onclick="setOperatorVerification('${d.id}', false)">Reject</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  if (listEl1) listEl1.innerHTML = cardsHtml;
+  if (listEl2) listEl2.innerHTML = cardsHtml;
 }
 
-window.toggleOperatorVerification = function(defectId) {
+window.setOperatorVerification = function(defectId, isVerified) {
   const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
   if (!liveSurvey) return;
   const defect = liveSurvey.defects.find(d => d.id === defectId);
   if (defect) {
-    defect.verified = !defect.verified;
+    defect.verified = isVerified;
     drawBoundingBoxes();
     renderOperatorDefectsList();
-    showToast(defect.verified ? "Defect Verified" : "Defect Rejected", `${defect.name} status updated`, "warning");
+    showToast(isVerified ? "Defect Verified" : "Marked False Alarm", `${defect.raw_name || defect.name} status updated`, isVerified ? "success" : "warning");
   }
 };
+
+window.downloadAcceptedDefectsCSV = function() {
+  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
+  if (!liveSurvey || !liveSurvey.defects || liveSurvey.defects.length === 0) {
+    showToast("No Defects Found", "Please run inspection first to identify defects.", "warning");
+    return;
+  }
+
+  const accepted = liveSurvey.defects.filter(d => d.verified !== false);
+  const rejectedCount = liveSurvey.defects.length - accepted.length;
+
+  if (accepted.length === 0) {
+    showToast("All Defects Rejected", "All findings were marked as false alarms. 0 defects recorded.", "warning");
+    return;
+  }
+
+  let csv = "Survey_ID,Corridor,Inspection_Date,Defect_ID,Defect_Category,Severity,Confidence,Prescribed_IRPWM_Remedial_Action,Chainage,Latitude,Longitude,Pilot_Verification_Status\n";
+  accepted.forEach(d => {
+    const cleanAction = (d.action || "Standard track inspection and repair").replace(/^IRPWM\s+Para\s+\d+:\s*/i, "").replace(/"/g, '""');
+    const confStr = d.conf ? `${Math.round(d.conf * 100)}%` : (d.confidence_pct || "85%");
+    csv += `"${liveSurvey.id}","${liveSurvey.corridor}","${liveSurvey.date}","${d.id}","${d.raw_name || d.name}","${d.severity}","${confStr}","${cleanAction}","${d.chainage || 'KM 122.400'}",${d.lat || 18.316611},${d.lon || 83.569639},"VERIFIED_BY_PILOT"\n`;
+  });
+
+  downloadCSVFile(csv, `RailSamiksha_Accepted_Defects_${liveSurvey.id}.csv`);
+  showToast("TMS CSV Exported", `Stored ${accepted.length} accepted defects in CSV. (${rejectedCount} false alarms excluded)`, "success");
+};
+
+let currentVideoTracks = [];
+
+function getVideoRenderProps(video) {
+  const cw = video.clientWidth;
+  const ch = video.clientHeight;
+  const vw = video.videoWidth || cw;
+  const vh = video.videoHeight || ch;
+  if (!vw || !vh) return { x: 0, y: 0, w: cw, h: ch };
+  const videoRatio = vw / vh;
+  const clientRatio = cw / ch;
+  let renderW = cw;
+  let renderH = ch;
+  let offsetX = 0;
+  let offsetY = 0;
+  if (clientRatio > videoRatio) {
+    renderW = ch * videoRatio;
+    offsetX = (cw - renderW) / 2;
+  } else {
+    renderH = cw / videoRatio;
+    offsetY = (ch - renderH) / 2;
+  }
+  return { x: offsetX, y: offsetY, w: renderW, h: renderH };
+}
+
+function resizeVideoCanvas() {
+  const video = document.getElementById("patrolVideo");
+  const canvas = document.getElementById("videoOverlayCanvas");
+  if (!video || !canvas) return;
+  if (video.clientWidth > 0 && video.clientHeight > 0) {
+    canvas.width = video.clientWidth;
+    canvas.height = video.clientHeight;
+  }
+}
+
+function drawVideoOverlay() {
+  const video = document.getElementById("patrolVideo");
+  const canvas = document.getElementById("videoOverlayCanvas");
+  if (!video || !canvas) return;
+
+  if (video.clientWidth > 0 && (canvas.width !== video.clientWidth || canvas.height !== video.clientHeight)) {
+    canvas.width = video.clientWidth;
+    canvas.height = video.clientHeight;
+  }
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!currentVideoTracks || currentVideoTracks.length === 0) return;
+
+  const duration = video.duration || 10.0;
+  const rawCurTime = video.currentTime;
+  const curTime = (duration > 0 && rawCurTime > duration) ? (rawCurTime % duration) : rawCurTime;
+
+  let match = null;
+  let minDiff = 0.8;
+  for (const t of currentVideoTracks) {
+    const diff = Math.abs(t.time_sec - curTime);
+    if (diff < minDiff) {
+      minDiff = diff;
+      match = t;
+    }
+  }
+  if (!match || !match.detections || match.detections.length === 0) return;
+
+  const props = getVideoRenderProps(video);
+
+  match.detections.forEach(det => {
+    const [nx1, ny1, nx2, ny2] = det.box_norm;
+    const x = props.x + (nx1 * props.w);
+    const y = props.y + (ny1 * props.h);
+    const boxW = Math.max(16, (nx2 - nx1) * props.w);
+    const boxH = Math.max(16, (ny2 - ny1) * props.h);
+
+    const sev = det.severity || "CRITICAL";
+    const color = sev === "CRITICAL" ? "#ef4444" : (sev === "HIGH" ? "#f97316" : "#eab308");
+
+    ctx.save();
+    ctx.fillStyle = sev === "CRITICAL" ? "rgba(239, 68, 68, 0.18)" : "rgba(245, 158, 11, 0.18)";
+    ctx.fillRect(x, y, boxW, boxH);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+    ctx.shadowBlur = 6;
+    ctx.strokeRect(x, y, boxW, boxH);
+
+    const confStr = det.confidence_pct || (det.score ? `${Math.round(det.score * 100)}%` : '');
+    const label = `Tracklet #${det.track_id} • ${det.class_name} ${confStr}`.trim();
+    ctx.font = "bold 11px 'JetBrains Mono', monospace, sans-serif";
+    const textWidth = ctx.measureText(label).width;
+    const pad = 6;
+    const pillH = 19;
+    const pillY = Math.max(props.y, y - pillH - 2);
+
+    ctx.fillStyle = color;
+    ctx.shadowBlur = 4;
+    ctx.fillRect(x, pillY, textWidth + pad * 2, pillH);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowBlur = 0;
+    ctx.fillText(label, x + pad, pillY + 13);
+    ctx.restore();
+  });
+}
 
 function initVideoPlayer() {
   const video = document.getElementById("patrolVideo");
   const videoSelect = document.getElementById("videoSelect");
+  const canvas = document.getElementById("videoOverlayCanvas");
   if (!video) return;
 
   if (videoSelect) {
     videoSelect.addEventListener("change", (e) => {
       video.src = e.target.value;
+      currentVideoTracks = [];
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
       video.play();
+      runVideoInspection();
     });
   }
 
@@ -1069,17 +1236,27 @@ function initVideoPlayer() {
     runVidBtn.addEventListener("click", runVideoInspection);
   }
 
-  video.addEventListener("timeupdate", () => {
-    const cur = video.currentTime;
-    const mins = Math.floor(cur / 60);
-    const secs = (cur % 60).toFixed(1);
-    document.getElementById("videoTime").textContent = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}s`;
-
-    document.getElementById("vSpd").textContent = `${(6.4 + Math.sin(cur * 0.8) * 0.6).toFixed(1)} km/h`;
-    document.getElementById("vAlt").textContent = `${(3.8 + Math.cos(cur * 0.5) * 0.2).toFixed(2)} m`;
-    document.getElementById("vLat").textContent = `${(28.614800 + cur * 0.00008).toFixed(4)}° N`;
-    document.getElementById("vKm").textContent = `KM ${(122.400 + cur * 0.002).toFixed(3)}`;
+  video.addEventListener("loadedmetadata", () => {
+    resizeVideoCanvas();
   });
+
+  video.addEventListener("play", () => {
+    resizeVideoCanvas();
+    function animLoop() {
+      if (!video.paused && !video.ended) {
+        drawVideoOverlay();
+        requestAnimationFrame(animLoop);
+      }
+    }
+    requestAnimationFrame(animLoop);
+  });
+
+  video.addEventListener("timeupdate", () => {
+    drawVideoOverlay();
+  });
+
+  video.addEventListener("seeked", drawVideoOverlay);
+  window.addEventListener("resize", resizeVideoCanvas);
 }
 
 // ============================================================================
@@ -1095,7 +1272,10 @@ function initClearanceWorkspace() {
 
 function renderClearanceView() {
   renderClearancePunchlist();
-  setTimeout(initOrUpdateClearanceMap, 200);
+  setTimeout(initOrUpdateClearanceMap, 150);
+  setTimeout(() => {
+    if (clearanceMap) clearanceMap.invalidateSize();
+  }, 350);
 }
 
 function renderClearancePunchlist() {
@@ -1163,15 +1343,17 @@ function renderClearancePunchlist() {
 }
 
 function showClearanceDetail(d) {
+  const lat = d.lat || 18.316611;
+  const lon = d.lon || 83.569639;
   document.getElementById("clDetailChainage").textContent = d.chainage;
-  document.getElementById("clDetailCoords").textContent = `${d.lat.toFixed(6)}° N, ${d.lon.toFixed(6)}° E`;
+  document.getElementById("clDetailCoords").textContent = `${lat.toFixed(6)}° N, ${lon.toFixed(6)}° E`;
   document.getElementById("clDetailAction").textContent = d.action;
   const sevEl = document.getElementById("clDetailSeverity");
   sevEl.textContent = d.severity;
   sevEl.className = `sev-pill ${d.severity === 'CRITICAL' ? 'sev-high' : (d.severity === 'MEDIUM' ? 'sev-med' : 'sev-low')}`;
 
   if (clearanceMap) {
-    clearanceMap.setView([d.lat, d.lon], 18);
+    clearanceMap.setView([lat, lon], 18);
   }
 }
 
@@ -1203,7 +1385,7 @@ function certifySectionClearance() {
   liveSurvey.statusLabel = "✓ 100% Cleared";
   liveSurvey.statusClass = "badge-green";
 
-  showToast("🛡️ Track Safety Certified", "Delhi-Mathura section certified 100% fit for 130 km/h traffic!", "success");
+  showToast("🛡️ Track Safety Certified", "Corridor section certified 100% fit for traffic!", "success");
 
   renderClearanceView();
   updateAdminKPIs();
@@ -1214,99 +1396,125 @@ function initOrUpdateClearanceMap() {
   const container = document.getElementById("clearanceMapContainer");
   if (!container) return;
 
-  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
-  if (!liveSurvey) return;
+  const targetLat = 18.316611;
+  const targetLon = 83.569639;
 
   if (!clearanceMap) {
-    clearanceMap = L.map('clearanceMapContainer').setView([28.6148, 77.2096], 17);
+    clearanceMap = L.map('clearanceMapContainer').setView([targetLat, targetLon], 17);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Esri Satellite',
       maxZoom: 19
     }).addTo(clearanceMap);
   } else {
+    clearanceMap.setView([targetLat, targetLon], 17);
     clearanceMap.invalidateSize();
   }
 
   clearanceMarkers.forEach(m => clearanceMap.removeLayer(m));
   clearanceMarkers = [];
 
-  liveSurvey.defects.forEach(d => {
-    let pinColor = d.cleared ? '#10b981' : (d.severity === 'CRITICAL' ? '#ef4444' : '#eab308');
+  // Dedicated Target Location Pin (18°18'59.8"N 83°34'10.7"E)
+  const pin = L.marker([targetLat, targetLon], {
+    title: '18°18\'59.8"N 83°34\'10.7"E'
+  }).addTo(clearanceMap);
+  pin.bindPopup(`
+    <div style="font-family: 'Inter', sans-serif; font-size: 13px; color: #0f172a; line-height: 1.4;">
+      <strong style="color: #0284c7;">📍 Field Gang Remedial Site</strong><br>
+      <span style="font-weight: 700; color: #000;">18°18'59.8"N 83°34'10.7"E</span><br>
+      <span style="font-size: 11px; color: #475569;">[${targetLat.toFixed(6)}, ${targetLon.toFixed(6)}]</span>
+    </div>
+  `).openPopup();
+  clearanceMarkers.push(pin);
 
-    const m = L.circleMarker([d.lat, d.lon], {
-      radius: 9,
-      fillColor: pinColor,
-      color: '#ffffff',
-      weight: 2,
-      fillOpacity: 0.9
-    }).addTo(clearanceMap);
+  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
+  if (liveSurvey && liveSurvey.defects && liveSurvey.defects.length > 0) {
+    liveSurvey.defects.forEach(d => {
+      let pinColor = d.cleared ? '#10b981' : (d.severity === 'CRITICAL' ? '#ef4444' : '#eab308');
 
-    m.bindPopup(`<strong>${d.id} • ${d.name}</strong><br>Chainage: ${d.chainage}<br>Status: ${d.cleared ? 'Cleared' : 'Pending'}`);
-    clearanceMarkers.push(m);
-  });
+      const m = L.circleMarker([d.lat || targetLat, d.lon || targetLon], {
+        radius: 9,
+        fillColor: pinColor,
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 0.9
+      }).addTo(clearanceMap);
+
+      m.bindPopup(`<strong>${d.id} • ${d.name}</strong><br>Chainage: ${d.chainage || 'KM 122.400'}<br>Status: ${d.cleared ? 'Cleared' : 'Pending'}`);
+      clearanceMarkers.push(m);
+    });
+  }
+
+  clearanceMap.setView([targetLat, targetLon], 17);
 }
 
 // ============================================================================
 // 8. PRINTABLE OFFICIAL TMS FORM P-14 CERTIFICATE
 // ============================================================================
 
-function initCertificateModal() {
-  const openBtn = document.getElementById("openCertificateBtn");
-  const modal = document.getElementById("certModal");
-  const closeBtn1 = document.getElementById("closeCertModalBtn");
-  const closeBtn2 = document.getElementById("closeCertBtn2");
-
-  if (openBtn) {
-    openBtn.addEventListener("click", () => {
-      populateCertificate();
-      modal.style.display = "flex";
+function initCropZoomModal() {
+  const modal = document.getElementById("cropZoomModal");
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeCropZoomModal();
     });
   }
-
-  if (closeBtn1) closeBtn1.addEventListener("click", () => modal.style.display = "none");
-  if (closeBtn2) closeBtn2.addEventListener("click", () => modal.style.display = "none");
-}
-
-function populateCertificate() {
-  const tbody = document.getElementById("certTableBody");
-  const statusText = document.getElementById("certStatusText");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
-  if (!liveSurvey) return;
-
-  const total = liveSurvey.defects.length;
-  const cleared = liveSurvey.defects.filter(d => d.cleared).length;
-
-  if (cleared === total) {
-    statusText.textContent = "100% DEFECTS CLEARED & RECTIFIED (TRACK FIT)";
-    statusText.style.color = "#16a34a";
-  } else {
-    statusText.textContent = `PARTIALLY CLEARED (${cleared}/${total} RECTIFIED)`;
-    statusText.style.color = "#d97706";
-  }
-
-  liveSurvey.defects.forEach(d => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><strong>${d.id}</strong></td>
-      <td>${d.name}</td>
-      <td><strong>${d.severity}</strong></td>
-      <td>${d.chainage}</td>
-      <td>${d.action}</td>
-      <td style="color: ${d.cleared ? '#16a34a' : '#dc2626'}; font-weight: 700;">
-        ${d.cleared ? `✓ Cleared (${d.clearedAt || '10:45'})` : '● Pending'}
-      </td>
-    `;
-    tbody.appendChild(tr);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeCropZoomModal();
+      hideCropHoverTooltip();
+    }
   });
 }
 
-window.printCertificate = function() {
-  window.print();
+window.openCropZoomModal = function(cropUrl, className, confPct, severity, action) {
+  const modal = document.getElementById("cropZoomModal");
+  const img = document.getElementById("cropModalImage");
+  const title = document.getElementById("cropModalDefectName");
+  const conf = document.getElementById("cropModalConfidence");
+  const sev = document.getElementById("cropModalSeverity");
+  const act = document.getElementById("cropModalAction");
+
+  if (!modal || !img) return;
+
+  img.src = cropUrl;
+  title.textContent = className;
+  conf.textContent = `Confidence: ${confPct}`;
+  sev.textContent = severity;
+  sev.className = `sev-pill ${severity === "CRITICAL" ? "sev-high" : (severity === "MEDIUM" ? "sev-med" : "sev-low")}`;
+  act.textContent = decodeURIComponent(action) || "IRPWM Standard track maintenance procedure";
+  modal.style.display = "flex";
+};
+
+window.closeCropZoomModal = function() {
+  const modal = document.getElementById("cropZoomModal");
+  if (modal) modal.style.display = "none";
+};
+
+window.showCropHoverTooltip = function(e, cropUrl, className, confPct, severity) {
+  const pop = document.getElementById("cropHoverPopover");
+  const img = document.getElementById("cropHoverImg");
+  const title = document.getElementById("cropHoverTitle");
+  const conf = document.getElementById("cropHoverConf");
+  const sev = document.getElementById("cropHoverSev");
+  if (!pop) return;
+
+  img.src = cropUrl;
+  title.textContent = className;
+  conf.textContent = confPct;
+  sev.textContent = severity;
+  sev.className = `sev-pill ${severity === "CRITICAL" ? "sev-high" : (severity === "MEDIUM" ? "sev-med" : "sev-low")}`;
+
+  const x = Math.min(window.innerWidth - 240, e.clientX + 15);
+  const y = Math.min(window.innerHeight - 200, e.clientY - 40);
+  pop.style.left = `${x}px`;
+  pop.style.top = `${y}px`;
+  pop.style.display = "block";
+};
+
+window.hideCropHoverTooltip = function() {
+  const pop = document.getElementById("cropHoverPopover");
+  if (pop) pop.style.display = "none";
 };
 
 // ============================================================================
@@ -1391,26 +1599,31 @@ window.exportSingleSurveyCSV = function(surveyId) {
   const survey = SURVEYS_DATABASE.find(s => s.id === surveyId);
   if (!survey) return;
 
+  const acceptedDefects = (survey.defects || []).filter(d => d.verified !== false);
+
   let csv = "Survey_ID,Corridor,Date,Defect_ID,Defect_Category,Severity,Chainage,Latitude,Longitude,IRPWM_Remedial_Standard,Clearance_Status\n";
-  survey.defects.forEach(d => {
-    csv += `"${survey.id}","${survey.corridor}","${survey.date}","${d.id}","${d.name}","${d.severity}","${d.chainage}",${d.lat},${d.lon},"${d.action}","${d.cleared ? 'CLEARED' : 'PENDING'}"\n`;
+  acceptedDefects.forEach(d => {
+    csv += `"${survey.id}","${survey.corridor}","${survey.date}","${d.id}","${d.raw_name || d.name}","${d.severity}","${d.chainage || 'KM 122.400'}",${d.lat || 18.316611},${d.lon || 83.569639},"${(d.action || 'Standard repair').replace(/"/g, '""')}","${d.cleared ? 'CLEARED' : 'PENDING'}"\n`;
   });
 
   downloadCSVFile(csv, `RailSamiksha_TMS_${survey.id}.csv`);
-  showToast("CSV Downloaded", `Exported TMS report for ${survey.id}`, "success");
+  showToast("CSV Downloaded", `Exported TMS report with ${acceptedDefects.length} verified defects.`, "success");
 };
 
 function exportMasterTMSCSV() {
   let csv = "Survey_ID,Corridor,Date,Pilot,Clearance_Gang,Survey_Status,Defect_ID,Defect_Category,Severity,Chainage,Latitude,Longitude,Clearance_Status\n";
 
+  let count = 0;
   SURVEYS_DATABASE.forEach(s => {
-    s.defects.forEach(d => {
-      csv += `"${s.id}","${s.corridor}","${s.date}","${s.pilot}","${s.clearanceGang}","${s.status}","${d.id}","${d.name}","${d.severity}","${d.chainage}",${d.lat},${d.lon},"${d.cleared ? 'CLEARED' : 'PENDING'}"\n`;
+    const accepted = (s.defects || []).filter(d => d.verified !== false);
+    accepted.forEach(d => {
+      count++;
+      csv += `"${s.id}","${s.corridor}","${s.date}","${s.pilot}","${s.clearanceGang}","${s.status}","${d.id}","${d.raw_name || d.name}","${d.severity}","${d.chainage || 'KM 122.400'}",${d.lat || 18.316611},${d.lon || 83.569639},"${d.cleared ? 'CLEARED' : 'PENDING'}"\n`;
     });
   });
 
   downloadCSVFile(csv, `RailSamiksha_Master_TMS_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
-  showToast("Master CSV Exported", "Divisional Master TMS records downloaded", "success");
+  showToast("Master CSV Exported", `Divisional Master TMS records (${count} verified defects) downloaded`, "success");
 }
 
 function downloadCSVFile(csvContent, fileName) {
@@ -1433,59 +1646,7 @@ let currentUploadedFile = null;
 let currentSqlTable = "users";
 
 function initSqlSchemaUI() {
-  // Check if backend API server is reachable
-  fetch("http://localhost:8000/api/status")
-    .then(r => r.json())
-    .then(data => {
-      const badge = document.getElementById("sqlBackendStatusBadge");
-      if (badge && data.status === "healthy") {
-        badge.textContent = "🟢 SQLite 3 Backend Connected (Port 8000)";
-        badge.className = "badge badge-green";
-      }
-    })
-    .catch(() => {
-      const badge = document.getElementById("sqlBackendStatusBadge");
-      if (badge) {
-        badge.textContent = "🟢 SQLite 3 / TMS Schema Synced";
-        badge.className = "badge badge-green";
-      }
-    });
-
-  // Modal open & close
-  const viewBtn = document.getElementById("viewSqlSchemaBtn");
-  const modal = document.getElementById("sqlModal");
-  const closeBtn = document.getElementById("closeSqlModalBtn");
-  const closeBtn2 = document.getElementById("closeSqlModalBtn2");
-  const copyBtn = document.getElementById("copySqlSchemaBtn");
-  const exportDumpBtn = document.getElementById("exportSqlDumpBtn");
-
-  if (viewBtn && modal) {
-    viewBtn.addEventListener("click", () => {
-      loadSqlSchemaIntoModal();
-      modal.style.display = "flex";
-    });
-  }
-
-  if (closeBtn && modal) closeBtn.addEventListener("click", () => modal.style.display = "none");
-  if (closeBtn2 && modal) closeBtn2.addEventListener("click", () => modal.style.display = "none");
-
-  if (copyBtn) {
-    copyBtn.addEventListener("click", () => {
-      const codeBox = document.getElementById("sqlSchemaCodeBox");
-      if (codeBox) {
-        navigator.clipboard.writeText(codeBox.textContent).then(() => {
-          showToast("SQL Copied", "Database DDL copied to clipboard", "success");
-        });
-      }
-    });
-  }
-
-  if (exportDumpBtn) {
-    exportDumpBtn.addEventListener("click", exportFullSQLDump);
-  }
-
-  // Initial render of default table
-  renderSqlTableViewer("users");
+  // SQL schema table inspector section removed from Super Admin workspace per requirements
 }
 
 function loadSqlSchemaIntoModal() {
@@ -1718,130 +1879,142 @@ function fallbackLocalSignIn(identifier, password) {
   }
 }
 
+let isImageInspecting = false;
+
 async function runModelInferencePipeline(customFile = null) {
-  const stillImg = document.getElementById("stillImage");
-  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
-  if (!liveSurvey) return;
+  if (isImageInspecting) return;
+  isImageInspecting = true;
+  try {
+    const stillImg = document.getElementById("stillImage");
+    const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
+    if (!liveSurvey) return;
 
-  const confSlider = document.getElementById("confSlider");
-  const confVal = confSlider ? parseFloat(confSlider.value) / 100 : 0.20;
-  const modelChoice = "deployed_prod";
+    const confSlider = document.getElementById("confSlider");
+    const confVal = confSlider ? parseFloat(confSlider.value) / 100 : 0.20;
+    const modelChoice = "deployed_prod";
 
-  const targetFile = customFile || currentUploadedFile;
+    const targetFile = customFile || currentUploadedFile;
 
-  if (BACKEND_CONFIG.isOnline) {
-    showToast("AI Inspection Active", "Executing high-resolution track defect inspection...", "info");
+    if (BACKEND_CONFIG.isOnline) {
+      showToast("AI Inspection Active", "Executing high-resolution track defect inspection...", "info");
 
-    try {
-      let body;
-      let headers = {};
+      try {
+        let body;
+        let headers = {};
 
-      if (targetFile instanceof File) {
-        const formData = new FormData();
-        formData.append("file", targetFile);
-        formData.append("confidence", confVal.toString());
-        formData.append("model", modelChoice);
-        formData.append("use_sahi", "true");
-        body = formData;
-      } else {
-        const sampleName = (currentScenarioKey === "scenario_fracture") 
-          ? "track_fracture_sample.jpg" 
-          : "sample_track_image.jpg";
+        if (targetFile instanceof File) {
+          const formData = new FormData();
+          formData.append("file", targetFile);
+          formData.append("confidence", confVal.toString());
+          formData.append("model", modelChoice);
+          formData.append("use_sahi", "true");
+          body = formData;
+        } else {
+          const sampleName = (currentScenarioKey === "scenario_fracture") 
+            ? "track_fracture_sample.jpg" 
+            : "sample_track_image.jpg";
 
-        body = JSON.stringify({
-          sample_name: sampleName,
-          confidence: confVal,
-          model: modelChoice,
-          use_sahi: true
-        });
-        headers["Content-Type"] = "application/json";
-      }
-
-      const res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/infer/image`, {
-        method: "POST",
-        headers: headers,
-        body: body
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      if (data.success && Array.isArray(data.detections)) {
-        liveSurvey.defects = data.detections.map((d, i) => {
-          const lowerName = d.name.toLowerCase();
-          const category = lowerName.includes("fastener") ? "fastener" :
-                           lowerName.includes("sleeper") ? "sleeper" :
-                           lowerName.includes("ballast") ? "ballast" :
-                           lowerName.includes("foreign") ? "foreign_object" : "rail";
-          return {
-            id: d.id,
-            name: `${d.name} (${d.confidence_pct})`,
-            raw_name: d.name,
-            category: category,
-            severity: d.severity,
-            conf: d.confidence,
-            box: d.bbox_norm,
-            chainage: d.chainage,
-            lat: 28.6148 + (i * 0.0006),
-            lon: 77.2096 + (i * 0.0005),
-            action: d.action,
-            cleared: false,
-            verified: true
-          };
-        });
-
-        // Render OpenCV Annotated Image directly if returned by backend (100% parity with Production Streamlit App)
-        if (data.annotated_preview_url && stillImg) {
-          stillImg.src = data.annotated_preview_url;
+          body = JSON.stringify({
+            sample_name: sampleName,
+            confidence: confVal,
+            model: modelChoice,
+            use_sahi: true
+          });
+          headers["Content-Type"] = "application/json";
         }
 
-        // Render high-res Defect Crop Gallery (identical to Railway Production App)
-        const gallery = document.getElementById("defectCropGallery");
-        if (gallery) {
-          if (Array.isArray(data.crops) && data.crops.length > 0) {
-            gallery.innerHTML = data.crops.map(c => `
-              <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; text-align: center;">
-                <img src="${c.crop_url}" style="width: 100%; height: 50px; object-fit: cover; border-radius: 4px;" alt="${c.class_name}">
-                <div style="font-size: 9px; font-weight: 700; color: var(--text-main); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.class_name}</div>
-                <div style="font-size: 8px; color: var(--cyan-accent); font-weight: 600;">${c.confidence_pct}</div>
-              </div>
-            `).join("");
-          } else {
-            gallery.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No defect crops extracted.</div>';
+        const res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/infer/image`, {
+          method: "POST",
+          headers: headers,
+          body: body
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.detections)) {
+          liveSurvey.defects = data.detections.map((d, i) => {
+            const lowerName = d.name.toLowerCase();
+            const category = lowerName.includes("fastener") ? "fastener" :
+                             lowerName.includes("sleeper") ? "sleeper" :
+                             lowerName.includes("ballast") ? "ballast" :
+                             lowerName.includes("foreign") ? "foreign_object" : "rail";
+            return {
+              id: d.id,
+              name: `${d.name} (${d.confidence_pct})`,
+              raw_name: d.name,
+              category: category,
+              severity: d.severity,
+              conf: d.confidence,
+              box: d.bbox_norm,
+              chainage: d.chainage,
+              lat: 18.316611 + (i * 0.0001),
+              lon: 83.569639 + (i * 0.0001),
+              action: d.action,
+              cleared: false,
+              verified: true
+            };
+          });
+
+          if (data.annotated_preview_url && stillImg) {
+            stillImg.src = data.annotated_preview_url;
           }
+
+          const renderCrops = (container) => {
+            if (!container) return;
+            if (Array.isArray(data.crops) && data.crops.length > 0) {
+              container.innerHTML = data.crops.map(c => `
+                <div class="crop-thumb-item" 
+                     onclick="openCropZoomModal('${c.crop_url}', '${c.class_name}', '${c.confidence_pct}', '${c.severity}', '${encodeURIComponent(c.action || '')}')"
+                     onmouseenter="showCropHoverTooltip(event, '${c.crop_url}', '${c.class_name}', '${c.confidence_pct}', '${c.severity}')"
+                     onmouseleave="hideCropHoverTooltip()"
+                     style="cursor: pointer; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px; text-align: center;">
+                  <img src="${c.crop_url}" style="width: 100%; height: 55px; object-fit: cover; border-radius: 4px; background: #000;" alt="${c.class_name}">
+                  <div style="font-size: 10px; font-weight: 800; color: var(--text-main); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.class_name}</div>
+                  <div style="font-size: 9px; color: #38bdf8; font-weight: 700;">${c.confidence_pct}</div>
+                </div>
+              `).join("");
+            } else {
+              container.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No defect crops extracted.</div>';
+            }
+          };
+          renderCrops(document.getElementById("defectCropGallery"));
+          renderCrops(document.getElementById("defectCropGalleryVideo"));
+
+          drawBoundingBoxes();
+          renderOperatorDefectsList();
+          updateAdminKPIs();
+          updateAnalyticsWidgets();
+
+          const resHud = document.getElementById("resHudText");
+          if (resHud) resHud.textContent = `${stillImg.naturalWidth || 1920} × ${stillImg.naturalHeight || 1080} px`;
+
+          showToast(
+            "Inspection Complete",
+            `Identified ${data.total_defects} verified defect signatures in ${data.inference_time_ms}ms`,
+            "success"
+          );
+          return;
         }
-
-        drawBoundingBoxes();
-        renderOperatorDefectsList();
-        updateAdminKPIs();
-        updateAnalyticsWidgets();
-
-        const resHud = document.getElementById("resHudText");
-        if (resHud) resHud.textContent = `${stillImg.naturalWidth || 1920} × ${stillImg.naturalHeight || 1080} px`;
-
-        showToast(
-          "Inspection Complete",
-          `Identified ${data.total_defects} verified defect signatures in ${data.inference_time_ms}ms`,
-          "success"
-        );
+      } catch (e) {
+        console.warn("Backend inference error:", e);
+        showToast("Backend Notice", `Inference Notice: ${e.message}`, "warning");
         return;
       }
-    } catch (e) {
-      console.warn("Backend inference error:", e);
-      showToast("Backend Notice", `Inference Notice: ${e.message}`, "warning");
-      return;
     }
-  }
 
-  // Fallback simulation ONLY if backend server is unreachable
-  showToast("Client Fallback Engine", "Simulating offline inspection view...", "warning");
-  setTimeout(() => {
-    drawBoundingBoxes();
-    renderOperatorDefectsList();
-    updateAdminKPIs();
-    updateAnalyticsWidgets();
-    showToast("Inference Complete", "Loaded local survey verification data", "info");
-  }, 400);
+    // Fallback simulation ONLY if backend server is unreachable
+    showToast("Client Fallback Engine", "Simulating offline inspection view...", "warning");
+    setTimeout(() => {
+      drawBoundingBoxes();
+      renderOperatorDefectsList();
+      updateAdminKPIs();
+      updateAnalyticsWidgets();
+      showToast("Inference Complete", "Loaded local survey verification data", "info");
+    }, 400);
+  } finally {
+    isImageInspecting = false;
+  }
 }
 
 function updateSeverityStats() {
@@ -1854,7 +2027,12 @@ function updateAdminMetrics() {
   updateAnalyticsWidgets();
 }
 
+let isVideoInspecting = false;
+
 async function runVideoInspection() {
+  if (isVideoInspecting) return;
+  isVideoInspecting = true;
+
   const videoSelect = document.getElementById("videoSelect");
   const statusBadge = document.getElementById("videoTrackerStatus");
   const trackletsCountEl = document.getElementById("videoConfirmedTrackletsCount");
@@ -1874,7 +2052,7 @@ async function runVideoInspection() {
       formData.append("file", currentUploadedVideoFile);
       formData.append("stride", "2");
       formData.append("confidence", "0.20");
-      formData.append("max_frames", "90");
+      formData.append("max_frames", "600");
       body = formData;
     } else {
       const selectedVal = videoSelect ? videoSelect.value : "sample_data/broken_track_patrol.mp4";
@@ -1883,7 +2061,7 @@ async function runVideoInspection() {
         sample_name: sampleName,
         stride: 2,
         confidence: 0.20,
-        max_frames: 90
+        max_frames: 600
       });
       headers["Content-Type"] = "application/json";
     }
@@ -1902,37 +2080,75 @@ async function runVideoInspection() {
       if (falseFlashesEl) falseFlashesEl.textContent = data.false_flashes_blocked || 0;
       if (statusBadge) statusBadge.textContent = `${data.confirmed_tracklets} Tracklets Confirmed`;
 
-      if (eventsListEl) {
-        if (Array.isArray(data.verified_incidents) && data.verified_incidents.length > 0) {
-          eventsListEl.innerHTML = data.verified_incidents.map(inc => {
-            const sevClass = inc.severity === "CRITICAL" ? "sev-high" : (inc.severity === "MEDIUM" ? "sev-med" : "sev-low");
-            return `
-              <div class="event-item" style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-weight: 700; color: #fff; font-size: 12px;">Tracklet #${inc.track_id}: ${inc.class_name}</span>
-                  <span class="sev-pill ${sevClass}">${inc.severity}</span>
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">
-                  Peak Conf: <strong style="color: var(--cyan-accent);">${inc.peak_confidence}</strong> • Visible across ${inc.frames_visible} frames • ${inc.chainage}
-                </div>
-                <div style="font-size: 10px; color: #94a3b8; font-style: italic;">
-                  ${inc.action}
-                </div>
-              </div>
-            `;
-          }).join("");
-        } else {
-          eventsListEl.innerHTML = '<div style="font-size: 11px; color: #34d399; padding: 8px; text-align: center;">✓ Clean patrol run. 0 defects persisted through temporal filter.</div>';
+      // Store spatial frame tracks for live video canvas overlays
+      if (data.frame_tracks && Array.isArray(data.frame_tracks)) {
+        currentVideoTracks = data.frame_tracks;
+      }
+      resizeVideoCanvas();
+
+      // Restart & play video with active live bounding box tracking overlay
+      const patrolVid = document.getElementById("patrolVideo");
+      if (patrolVid) {
+        patrolVid.currentTime = 0;
+        patrolVid.play();
+      }
+
+      // Sync into Live Survey defect list & verification drawer in BOTH tabs
+      if (Array.isArray(data.verified_incidents) && data.verified_incidents.length > 0) {
+        const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
+        if (liveSurvey) {
+          liveSurvey.defects = data.verified_incidents.map((inc, idx) => ({
+            id: `DEF-${101 + idx}`,
+            name: inc.class_name,
+            raw_name: inc.class_name,
+            category: inc.class_name.toLowerCase().includes("fastener") ? "fastener" : (inc.class_name.toLowerCase().includes("sleeper") ? "sleeper" : "rail"),
+            severity: inc.severity,
+            conf: parseFloat(inc.peak_confidence) / 100 || 0.85,
+            action: inc.action,
+            chainage: inc.chainage,
+            lat: inc.latitude || (18.316611 + (idx * 0.0001)),
+            lon: inc.longitude || (83.569639 + (idx * 0.0001)),
+            verified: true
+          }));
+          renderOperatorDefectsList();
+          updateAdminKPIs();
+          updateAnalyticsWidgets();
         }
       }
 
-      // Render Keyframe gallery
+      // Populate Defect Crop Gallery in BOTH Still Image and Flight Patrol Video sections
+      const renderCrops = (container) => {
+        if (!container) return;
+        if (Array.isArray(data.crops) && data.crops.length > 0) {
+          container.innerHTML = data.crops.map(c => `
+            <div class="crop-thumb-item" 
+                 onclick="openCropZoomModal('${c.crop_url}', '${c.class_name}', '${c.confidence_pct}', '${c.severity}', '${encodeURIComponent(c.action || '')}')"
+                 onmouseenter="showCropHoverTooltip(event, '${c.crop_url}', '${c.class_name}', '${c.confidence_pct}', '${c.severity}')"
+                 onmouseleave="hideCropHoverTooltip()"
+                 style="cursor: pointer; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px; text-align: center; transition: all 0.15s ease;">
+              <img src="${c.crop_url}" style="width: 100%; height: 55px; object-fit: cover; border-radius: 4px; background: #000;" alt="${c.class_name}">
+              <div style="font-size: 10px; font-weight: 800; color: var(--text-main); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.class_name}</div>
+              <div style="font-size: 9px; color: #38bdf8; font-weight: 700;">${c.confidence_pct}</div>
+            </div>
+          `).join("");
+        } else {
+          container.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No defect crops extracted.</div>';
+        }
+      };
+      renderCrops(document.getElementById("defectCropGallery"));
+      renderCrops(document.getElementById("defectCropGalleryVideo"));
+
+      // Render Keyframe gallery with click-to-zoom
       if (keyframesGallery) {
         if (Array.isArray(data.keyframes) && data.keyframes.length > 0) {
           keyframesGallery.innerHTML = data.keyframes.map(kf => `
-            <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; text-align: center;">
-              <img src="${kf.preview_url}" style="width: 100%; height: 55px; object-fit: cover; border-radius: 4px;" alt="Frame ${kf.frame_idx}">
-              <div style="font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 2px;">Frame ${kf.frame_idx} (${kf.detections_count} dets)</div>
+            <div class="crop-thumb-item" 
+                 onclick="openCropZoomModal('${kf.preview_url}', 'Flight Keyframe #${kf.frame_idx}', '${kf.detections_count} Detections', 'CRITICAL', 'Patrol flight keyframe anomaly snapshot')"
+                 onmouseenter="showCropHoverTooltip(event, '${kf.preview_url}', 'Frame #${kf.frame_idx}', '${kf.detections_count} Detections', 'CRITICAL')"
+                 onmouseleave="hideCropHoverTooltip()"
+                 style="cursor: pointer; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px; text-align: center; transition: all 0.15s ease;">
+              <img src="${kf.preview_url}" style="width: 100%; height: 55px; object-fit: cover; border-radius: 4px; background: #000;" alt="Frame ${kf.frame_idx}">
+              <div style="font-size: 9px; font-weight: 700; color: #fff; margin-top: 2px;">Frame ${kf.frame_idx} (${kf.detections_count} dets)</div>
             </div>
           `).join("");
         } else {
@@ -1950,5 +2166,13 @@ async function runVideoInspection() {
     console.error("Video inference error:", err);
     if (statusBadge) statusBadge.textContent = "Error";
     showToast("Video Inference Notice", `Could not complete server video inference: ${err.message}`, "warning");
+  } finally {
+    isVideoInspecting = false;
   }
 }
+
+// Global window resize to keep Leaflet Esri satellite maps perfectly sized
+window.addEventListener("resize", () => {
+  if (adminMap) adminMap.invalidateSize();
+  if (clearanceMap) clearanceMap.invalidateSize();
+});

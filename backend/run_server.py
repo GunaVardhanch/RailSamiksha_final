@@ -4,7 +4,14 @@ RailSamiksha AI — Backend Server Launcher
 Runs Uvicorn ASGI server with Starlette app on port 8000.
 """
 
+import os
 import sys
+
+# Prevent OpenMP thread heap contention on multi-core CPU
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
 import uvicorn
 from pathlib import Path
 

@@ -235,7 +235,7 @@ def generate_and_save_survey_csv(survey_id: str, generated_by_user_id: str = "US
                    COALESCE(c.is_cleared, 0) AS is_cleared
             FROM defects d
             LEFT JOIN defect_clearances c ON d.id = c.defect_id
-            WHERE d.survey_id = ?
+            WHERE d.survey_id = ? AND d.verified_by_pilot = 1
             ORDER BY d.chainage_km ASC
         """, (survey_id,))
         defects = cur.fetchall()

@@ -12,6 +12,8 @@ start "" http://localhost:3000
 
 if exist "..\.venv\Scripts\python.exe" (
     "..\.venv\Scripts\python.exe" -m http.server 3000
+) else if exist "%LOCALAPPDATA%\Python\bin\python.exe" (
+    "%LOCALAPPDATA%\Python\bin\python.exe" -m http.server 3000
 ) else (
     python -m http.server 3000
 )

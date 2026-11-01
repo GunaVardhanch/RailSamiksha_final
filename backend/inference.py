@@ -13,12 +13,15 @@ Uses the exact production pipeline from RailSamiksha_Production_App:
 import sys
 import time
 import base64
+import threading
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 import cv2
 import numpy as np
 import torch
+
+_INFERENCE_LOCK = threading.Lock()
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
@@ -60,6 +63,12 @@ IRPWM_ACTIONS = {
     "Rail Joint Damage": "IRPWM Para 241: Re-torque fishplate bolts to 650 Nm or weld joint",
     "Missing Fastener": "IRPWM Para 257: Install standard ERC clip & rubber pad within 24h",
     "Damaged Fastener": "IRPWM Para 257: Replace Pandrol e-clip with RDSO approved MK-III",
+    "Broken Sleeper": "IRPWM Para 234: Emergency speed restriction (15 km/h) & spot sleeper replacement",
+    "Missing Sleeper": "IRPWM Para 234: Emergency speed restriction (15 km/h) & urgent sleeper renewal",
+    "Missing  Sleeper": "IRPWM Para 234: Emergency speed restriction (15 km/h) & urgent sleeper renewal",
+    "Ballast Washout": "IRPWM Para 228: Subgrade erosion repair & ballast tamping within 24-48h",
+    "Ballast Deficiency": "IRPWM Para 228: Replenish 250mm ballast cushion & tamp",
+    # Legacy fallbacks
     "Sleeper Defect": "IRPWM Para 234: Mark for spot PSC sleeper replacement in next block",
     "Foreign Objects": "IRPWM Para 219: Immediate manual track clearance of obstructions",
     "Rail Wear": "IRPWM Para 302: Lubricate rail gauge face & profile grind",
@@ -88,12 +97,20 @@ class ProductionDefectDetector:
         """Switches active weights dynamically."""
         if model_key in MODEL_REGISTRY and MODEL_REGISTRY[model_key].exists():
             w_path = MODEL_REGISTRY[model_key]
+            if Path(self.weights_path).resolve() == Path(w_path).resolve():
+                return
+            del self.pipeline
+            import gc
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
             self.pipeline = RailSamikshaProductionPipeline(
                 weights_path=str(w_path),
                 conf_threshold=self.conf_threshold,
                 device=self.device
             )
             self.weights_path = w_path
+            self.names = self.pipeline.detector.names
             print(f"[Inference Engine] Switched weights to: {model_key} ({w_path.name})")
 
     def predict_image(
@@ -103,32 +120,52 @@ class ProductionDefectDetector:
         use_sahi: bool = True
     ) -> Dict[str, Any]:
         """Runs the exact production inspection on raw image bytes."""
-        t_start = time.perf_counter()
+        import torch
 
-        self.pipeline.set_confidence(conf_threshold)
+        with _INFERENCE_LOCK:
+            with torch.no_grad():
+                t_start = time.perf_counter()
+                self.pipeline.set_confidence(conf_threshold)
 
-        # Decode image
-        np_arr = np.frombuffer(image_bytes, np.uint8)
-        img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        if img_bgr is None:
-            raise ValueError("Could not decode image from provided bytes.")
+                # Decode image
+                np_arr = np.frombuffer(image_bytes, np.uint8)
+                img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+                if img_bgr is None:
+                    raise ValueError("Could not decode image from provided bytes.")
 
-        h_orig, w_orig = img_bgr.shape[:2]
+                h_orig, w_orig = img_bgr.shape[:2]
 
-        # Process through production pipeline
-        results = self.pipeline.process_still_image(img_bgr, use_sahi=use_sahi)
-        raw_dets = results["detections"]
-        annotated_bgr = results["annotated_image"]
+                # Cap max dimension to 2048 to prevent CPU OOM / 60+ second timeouts on large images
+                max_dim = max(h_orig, w_orig)
+                scale_ratio = 1.0
+                if max_dim > 2048:
+                    scale_ratio = 2048.0 / max_dim
+                    new_w = int(w_orig * scale_ratio)
+                    new_h = int(h_orig * scale_ratio)
+                    img_for_infer = cv2.resize(img_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+                else:
+                    img_for_infer = img_bgr
+
+                # Process through production pipeline
+                results = self.pipeline.process_still_image(img_for_infer, use_sahi=use_sahi)
+                raw_dets = results["detections"]
+                annotated_bgr = results["annotated_image"]
 
         detections: List[Dict[str, Any]] = []
         crops: List[Dict[str, Any]] = []
         counts_by_severity = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
 
+        inv_scale = 1.0 / scale_ratio if scale_ratio != 1.0 else 1.0
+
         for idx, d in enumerate(raw_dets):
-            x1, y1, x2, y2 = [float(v) for v in d["box"]]
+            bx1, by1, bx2, by2 = [float(v) * inv_scale for v in d["box"]]
+            x1 = max(0.0, min(float(w_orig), bx1))
+            y1 = max(0.0, min(float(h_orig), by1))
+            x2 = max(0.0, min(float(w_orig), bx2))
+            y2 = max(0.0, min(float(h_orig), by2))
             conf = float(d["score"])
-            class_name = d["class_name"]
-            severity = d.get("severity", SEVERITY_MAPPING.get(class_name, "MEDIUM"))
+            class_name = " ".join(str(d["class_name"]).strip().split())
+            severity = SEVERITY_MAPPING.get(class_name, d.get("severity", "MEDIUM"))
 
             counts_by_severity[severity] = counts_by_severity.get(severity, 0) + 1
 
@@ -140,7 +177,7 @@ class ProductionDefectDetector:
                 round(max(0.0, min(1.0, y2 / h_orig)), 4),
             ]
 
-            chainage_km = 44.200 + (idx * 0.120)
+            chainage_km = 122.400 + (idx * 0.015)
             chainage_str = f"KM {chainage_km:.3f}"
             center_x = (x1 + x2) / 2
             track_side = "LEFT_RAIL" if center_x < w_orig * 0.4 else "RIGHT_RAIL" if center_x > w_orig * 0.6 else "CENTRAL_BALLAST"
@@ -177,6 +214,7 @@ class ProductionDefectDetector:
                         "class_name": class_name,
                         "confidence_pct": defect_record["confidence_pct"],
                         "severity": severity,
+                        "action": action_code,
                         "crop_url": f"data:image/jpeg;base64,{base64.b64encode(c_buf).decode('utf-8')}"
                     })
 
@@ -206,7 +244,7 @@ class ProductionDefectDetector:
         video_path: Optional[str] = None,
         conf_threshold: float = 0.20,
         stride: int = 2,
-        max_frames: int = 90
+        max_frames: int = 600
     ) -> Dict[str, Any]:
         """
         Runs ByteTrack temporal tracking on video frames, matching RailSamiksha_Production_App.
@@ -214,11 +252,16 @@ class ProductionDefectDetector:
         import os
         import tempfile
 
-        t_start = time.perf_counter()
-        self.pipeline.set_confidence(conf_threshold)
-        self.pipeline.reset_tracker()
+        with _INFERENCE_LOCK:
+            t_start = time.perf_counter()
+            self.pipeline.set_confidence(conf_threshold)
+            self.pipeline.reset_tracker()
 
         temp_path = None
+        if isinstance(video_bytes, str):
+            video_path = video_bytes
+            video_bytes = None
+
         if video_bytes:
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
             tfile.write(video_bytes)
@@ -240,9 +283,15 @@ class ProductionDefectDetector:
             raise ValueError(f"Could not open video source: {path_to_open}")
 
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps_val = cap.get(cv2.CAP_PROP_FPS)
+        if not fps_val or fps_val <= 0 or np.isnan(fps_val):
+            fps_val = 30.0
+
         frame_idx = 0
         inspected_count = 0
         keyframes = []
+        frame_tracks = []
+        video_crops = []
         raw_detections_count = 0
 
         try:
@@ -255,11 +304,64 @@ class ProductionDefectDetector:
                     continue
 
                 inspected_count += 1
+                h_f, w_f = frame.shape[:2]
                 res = self.pipeline.process_video_frame(frame, frame_idx)
-                raw_detections_count += len(res.get("detections", []))
+                raw_dets = res.get("detections", [])
+                raw_detections_count += len(raw_dets)
+
+                # Record per-frame spatial track coordinates for client-side live video rendering
+                if len(raw_dets) > 0:
+                    frame_dets = []
+                    for idx_d, d in enumerate(raw_dets):
+                        x1, y1, x2, y2 = [float(v) for v in d["box"]]
+                        cname = " ".join(str(d["class_name"]).strip().split())
+                        score = float(d.get("score", 0.0))
+                        track_id = d.get("track_id", idx_d + 1)
+                        severity = d.get("severity", SEVERITY_MAPPING.get(cname, "MEDIUM"))
+                        frame_dets.append({
+                            "track_id": track_id,
+                            "class_name": cname,
+                            "score": round(score, 3),
+                            "confidence_pct": f"{score:.1%}",
+                            "severity": severity,
+                            "action": IRPWM_ACTIONS.get(cname, "IRPWM standard track inspection and repair"),
+                            "box_norm": [
+                                round(max(0.0, min(1.0, x1 / w_f)), 4),
+                                round(max(0.0, min(1.0, y1 / h_f)), 4),
+                                round(max(0.0, min(1.0, x2 / w_f)), 4),
+                                round(max(0.0, min(1.0, y2 / h_f)), 4)
+                            ]
+                        })
+                    frame_tracks.append({
+                        "frame_idx": frame_idx,
+                        "time_sec": round(frame_idx / fps_val, 2),
+                        "detections": frame_dets
+                    })
+
+                    # Extract up to 6 distinct flaw crops for the gallery
+                    if len(video_crops) < 6:
+                        for d in raw_dets:
+                            if len(video_crops) >= 6:
+                                break
+                            x1, y1, x2, y2 = [int(v) for v in d["box"]]
+                            x1, y1 = max(0, x1 - 15), max(0, y1 - 15)
+                            x2, y2 = min(w_f, x2 + 15), min(h_f, y2 + 15)
+                            crop_img = frame[y1:y2, x1:x2]
+                            if crop_img.size > 0:
+                                ok, c_buf = cv2.imencode(".jpg", crop_img, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                                if ok:
+                                    cname = " ".join(str(d["class_name"]).strip().split())
+                                    video_crops.append({
+                                        "id": f"VID-F{frame_idx}",
+                                        "class_name": cname,
+                                        "confidence_pct": f"{float(d.get('score', 0)):.1%}",
+                                        "severity": d.get("severity", SEVERITY_MAPPING.get(cname, "MEDIUM")),
+                                        "action": IRPWM_ACTIONS.get(cname, "IRPWM standard track inspection and repair"),
+                                        "crop_url": f"data:image/jpeg;base64,{base64.b64encode(c_buf).decode('utf-8')}"
+                                    })
 
                 # Save keyframes with active defect boxes
-                if len(res.get("detections", [])) > 0 and len(keyframes) < 4:
+                if len(raw_dets) > 0 and len(keyframes) < 4:
                     annotated = res.get("annotated_frame")
                     if annotated is not None:
                         ok, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -267,7 +369,7 @@ class ProductionDefectDetector:
                             b64 = f"data:image/jpeg;base64,{base64.b64encode(buf).decode('utf-8')}"
                             keyframes.append({
                                 "frame_idx": frame_idx,
-                                "detections_count": len(res["detections"]),
+                                "detections_count": len(raw_dets),
                                 "preview_url": b64
                             })
         finally:
@@ -281,12 +383,13 @@ class ProductionDefectDetector:
         verified = self.pipeline.tracker.get_verified_incidents()
         formatted_incidents = []
         for v in verified:
-            cat = v["Defect Category"]
+            cat = " ".join(str(v["Defect Category"]).strip().split())
+            sev = SEVERITY_MAPPING.get(cat, v.get("Severity", "MEDIUM"))
             action = IRPWM_ACTIONS.get(cat, "IRPWM standard track inspection and repair")
             formatted_incidents.append({
                 "track_id": v["Track ID"],
                 "class_name": cat,
-                "severity": v["Severity"],
+                "severity": sev,
                 "peak_confidence": v["Peak Confidence"],
                 "frames_visible": v["Frames Visible"],
                 "start_frame": v["Start Frame"],
@@ -310,7 +413,9 @@ class ProductionDefectDetector:
             "confirmed_tracklets": len(formatted_incidents),
             "false_flashes_blocked": false_flashes,
             "verified_incidents": formatted_incidents,
-            "keyframes": keyframes
+            "keyframes": keyframes,
+            "frame_tracks": frame_tracks,
+            "crops": video_crops
         }
 
 _detector_singleton: Optional[ProductionDefectDetector] = None

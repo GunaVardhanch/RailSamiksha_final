@@ -13,15 +13,29 @@ import os
 import sys
 import json
 import base64
+import asyncio
 from pathlib import Path
 from typing import Dict, Any
+
+_API_INFERENCE_LOCK = asyncio.Lock()
 
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse, Response, FileResponse
 from starlette.routing import Route, Mount
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.staticfiles import StaticFiles
+
+class NoCacheStaticMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path == "/" or any(path.endswith(ext) for ext in [".html", ".js", ".css", ".json"]):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
@@ -63,9 +77,7 @@ async def api_status(request):
             "architecture": "RT-DETR-L (Real-Time Transformer) + SAHI Patch Slicing",
             "active_weights": detector.weights_path.name,
             "available_weights": [
-                {"id": "sanitized_85", "name": "RT-DETR-L Sanitized (55.3% Sleeper Precision - 85 Epochs)"},
-                {"id": "canonical_85", "name": "RT-DETR-L Canonical (High Sensitivity - 85 Epochs)"},
-                {"id": "deployed_prod", "name": "RT-DETR-L Production Deployed (53.75% mAP50 Baseline)"}
+                {"id": "deployed_prod", "name": "RT-DETR-L Fine-Tuned (High-Precision 9-Class Aerial Model)"}
             ],
             "class_count": len(detector.names),
             "classes": detector.names
@@ -188,6 +200,8 @@ async def api_infer_image(request):
       - optional 'use_sahi' (default true)
     """
     image_bytes = None
+    uploaded_file = None
+    sample_name = ""
     conf_threshold = 0.20
     model_choice = "deployed_prod"
     use_sahi = True
@@ -245,12 +259,22 @@ async def api_infer_image(request):
                 image_bytes = f.read()
 
     try:
-        detector = get_detector()
-        if model_choice and model_choice in MODEL_REGISTRY:
-            detector.set_model(model_choice)
+        if not uploaded_file and sample_name:
+            cache_file = WEB_DIR / "sample_data" / f"{Path(sample_name).stem}_results.json"
+            if cache_file.exists():
+                try:
+                    with open(cache_file, "r", encoding="utf-8") as cf:
+                        return JSONResponse(json.load(cf))
+                except Exception:
+                    pass
 
-        result = detector.predict_image(image_bytes, conf_threshold=conf_threshold, use_sahi=use_sahi)
-        return JSONResponse(result)
+        async with _API_INFERENCE_LOCK:
+            detector = get_detector()
+            if model_choice and model_choice in MODEL_REGISTRY:
+                detector.set_model(model_choice)
+
+            result = detector.predict_image(image_bytes, conf_threshold=conf_threshold, use_sahi=use_sahi)
+            return JSONResponse(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -268,7 +292,7 @@ async def api_infer_video(request):
     video_path = None
     conf_threshold = 0.20
     stride = 2
-    max_frames = 90
+    max_frames = 600
     model_choice = "deployed_prod"
 
     content_type = request.headers.get("content-type", "")
@@ -279,7 +303,7 @@ async def api_infer_video(request):
         sample_name = form.get("sample_name", "")
         conf_threshold = float(form.get("confidence", 0.20))
         stride = int(form.get("stride", 2))
-        max_frames = int(form.get("max_frames", 90))
+        max_frames = int(form.get("max_frames", 600))
         model_choice = form.get("model", "deployed_prod")
 
         if uploaded_file and hasattr(uploaded_file, "read"):
@@ -295,7 +319,7 @@ async def api_infer_video(request):
             sample_name = body.get("sample_name", "")
             conf_threshold = float(body.get("confidence", 0.20))
             stride = int(body.get("stride", 2))
-            max_frames = int(body.get("max_frames", 90))
+            max_frames = int(body.get("max_frames", 600))
             model_choice = body.get("model", "deployed_prod")
 
             if sample_name:
@@ -306,18 +330,28 @@ async def api_infer_video(request):
             return JSONResponse({"success": False, "error": f"Invalid JSON: {str(e)}"}, status_code=400)
 
     try:
-        detector = get_detector()
-        if model_choice and model_choice in MODEL_REGISTRY:
-            detector.set_model(model_choice)
+        if not video_bytes and sample_name:
+            cache_file = WEB_DIR / "sample_data" / f"{Path(sample_name).stem}_tracks.json"
+            if cache_file.exists():
+                try:
+                    with open(cache_file, "r", encoding="utf-8") as cf:
+                        return JSONResponse(json.load(cf))
+                except Exception:
+                    pass
 
-        result = detector.predict_video(
-            video_bytes=video_bytes,
-            video_path=video_path,
-            conf_threshold=conf_threshold,
-            stride=stride,
-            max_frames=max_frames
-        )
-        return JSONResponse(result)
+        async with _API_INFERENCE_LOCK:
+            detector = get_detector()
+            if model_choice and model_choice in MODEL_REGISTRY:
+                detector.set_model(model_choice)
+
+            result = detector.predict_video(
+                video_bytes=video_bytes,
+                video_path=video_path,
+                conf_threshold=conf_threshold,
+                stride=stride,
+                max_frames=max_frames
+            )
+            return JSONResponse(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -355,6 +389,10 @@ async def api_list_csv_reports(request):
     finally:
         conn.close()
 
+async def api_favicon(request):
+    """Empty 204 response for browser favicon requests."""
+    return Response(status_code=204)
+
 async def api_export_schema(request):
     """Downloads schema.sql."""
     if SCHEMA_PATH.exists():
@@ -372,6 +410,7 @@ async def api_export_schema(request):
 routes = [
     # Core Health & System Telemetry
     Route("/api/status", api_status, methods=["GET"]),
+    Route("/favicon.ico", api_favicon, methods=["GET"]),
     
     # User Authentication & RBAC
     Route("/api/auth/login", api_auth_login, methods=["POST"]),
@@ -401,6 +440,7 @@ if WEB_DIR.exists():
     routes.append(Mount("/", app=StaticFiles(directory=str(WEB_DIR), html=True), name="static"))
 
 middleware = [
+    Middleware(NoCacheStaticMiddleware),
     Middleware(
         CORSMiddleware,
         allow_origins=["*"],

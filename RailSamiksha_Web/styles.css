@@ -1225,3 +1225,113 @@ code, pre, .mono {
   font-size: 12px;
   color: var(--text-dim);
 }
+
+/* High-Resolution Defect Crop Inspector Enhancements */
+.crop-thumb-item {
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crop-thumb-item:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8 !important;
+  box-shadow: 0 6px 16px rgba(56, 189, 248, 0.3);
+}
+
+/* Operator Detected Defect Cards — High-Contrast Typography */
+.operator-defect-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .operator-defect-card {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.operator-defect-title {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="light"] .operator-defect-title {
+  color: #000000 !important;
+}
+
+.operator-defect-conf {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0284c7;
+  margin-top: 2px;
+}
+
+[data-theme="light"] .operator-defect-conf {
+  color: #0369a1 !important;
+}
+
+.operator-defect-action {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-body);
+  line-height: 1.4;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+[data-theme="light"] .operator-defect-action {
+  color: #0f172a !important;
+}
+
+.btn-verify-accept {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 5px;
+  border: 1.5px solid #10b981;
+  background: transparent;
+  color: #10b981;
+  transition: all 0.15s ease;
+}
+
+.btn-verify-accept.active {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-verify-accept.active {
+  color: #000000 !important;
+}
+
+.btn-verify-accept:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.btn-verify-reject {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 5px;
+  border: 1.5px solid #ef4444;
+  background: transparent;
+  color: #ef4444;
+  transition: all 0.15s ease;
+}
+
+.btn-verify-reject.active {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.btn-verify-reject:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}

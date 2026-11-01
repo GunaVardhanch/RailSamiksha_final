@@ -6,7 +6,7 @@
   <title>RailSamiksha AI | Enterprise RBAC Aerial Track Inspection Platform</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#06b6d4">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=4.1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
 <body>
@@ -201,11 +201,7 @@
           <strong>Super Admin Executive Command:</strong> Full visibility into global flight surveys, live active patrols, central TMS CSV repository, and network-wide defect clearance metrics.
         </span>
       </div>
-      <div class="role-banner-action" id="roleBannerAction">
-        <button class="btn-secondary" id="openCertificateBtn" style="padding: 4px 10px; font-size: 11px; background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #86efac;">
-          🖨️ View TMS P-14 Safety Certificate
-        </button>
-      </div>
+      <div class="role-banner-action" id="roleBannerAction"></div>
     </div>
 
     <!-- Main Container -->
@@ -228,7 +224,7 @@
             <span class="metric-value" style="color: #38bdf8;" id="adminLiveSurveys">
               <span class="pulse-dot" style="display: inline-block; vertical-align: middle; margin-right: 4px;"></span> 1 Flight
             </span>
-            <span class="metric-subtext">Delhi-Mathura KM 122.4</span>
+            <span class="metric-subtext">18°18'59.8"N 83°34'10.7"E</span>
           </div>
           <div class="metric-card">
             <span class="metric-label">Total Defects Identified</span>
@@ -299,61 +295,7 @@
         </div>
 
         
-        <!-- Relational SQL Database Schema & TMS Storage Engine (Full Project Scale) -->
-        <div class="card" style="margin-top: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <h3 style="font-size: 15px; color: var(--text-main);">🗄️ Indian Railways TMS Relational SQL Database (v2.1)</h3>
-                <span class="badge badge-green" id="sqlBackendStatusBadge">🟢 SQLite 3 / TMS Schema Synced</span>
-              </div>
-              <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Production-grade relational schema storing Users & RBAC credentials, Drone Surveys, RT-DETR-L Detections, Field Gang Clearances, and Stored TMS CSV Reports.
-              </p>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button id="viewSqlSchemaBtn" class="btn-secondary" style="font-size: 11px; padding: 6px 12px;">
-                👁️ View DDL Schema
-              </button>
-              <a href="schema.sql" download="railsamiksha_schema.sql" class="btn-primary" style="font-size: 11px; padding: 6px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                📥 Download schema.sql
-              </a>
-              <button id="exportSqlDumpBtn" class="btn-secondary" style="font-size: 11px; padding: 6px 12px;">
-                💾 Export Live SQL Dump
-              </button>
-            </div>
-          </div>
 
-          <!-- SQL Schema Summary Bar -->
-          <div class="hud-bar" style="margin-bottom: 14px; background: var(--bg-subtle);">
-            <div class="hud-item"><span>Relational Tables</span><strong style="color: var(--text-main);">9 Tables</strong></div>
-            <div class="hud-item"><span>Analytical Views</span><strong style="color: var(--text-main);">2 Views</strong></div>
-            <div class="hud-item"><span>Auth Encryption</span><strong style="color: var(--cyan-accent);">SHA-256 + Salt</strong></div>
-            <div class="hud-item"><span>CSV Repository</span><strong style="color: var(--green-low);">Stored in SQL + SHA256</strong></div>
-            <div class="hud-item"><span>Compatibility</span><strong style="color: var(--yellow-med);">SQLite / Postgres / MySQL</strong></div>
-          </div>
-
-          <!-- SQL Tables Inspector Tabs -->
-          <div class="filter-pills-row" style="margin-bottom: 12px;" id="sqlTablePills">
-            <button class="filter-pill active" onclick="switchSqlTableTab('users')">👥 users (Auth & Roles)</button>
-            <button class="filter-pill" onclick="switchSqlTableTab('surveys')">🛰️ surveys (Drone Flights)</button>
-            <button class="filter-pill" onclick="switchSqlTableTab('defects')">⚠️ defects (RT-DETR-L)</button>
-            <button class="filter-pill" onclick="switchSqlTableTab('defect_clearances')">🔧 defect_clearances (Field Gang)</button>
-            <button class="filter-pill" onclick="switchSqlTableTab('survey_csv_reports')">📑 survey_csv_reports (TMS CSVs)</button>
-          </div>
-
-          <!-- SQL Table Content Display -->
-          <div class="data-table-wrapper" style="max-height: 320px; overflow-y: auto;">
-            <table class="data-table" id="sqlTableViewer">
-              <thead id="sqlTableHead">
-                <!-- Dynamically populated from JS -->
-              </thead>
-              <tbody id="sqlTableBody">
-                <!-- Dynamically populated from JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
 
         <!-- Analytics Breakdown Row (Full Project Scale) -->
         <div class="grid-2" style="margin-top: 20px;">
@@ -436,7 +378,7 @@
         <div class="session-bar">
           <div class="session-info">
             <div><strong style="color: #fff;">Active Survey Session:</strong> <code style="color: var(--cyan-accent);">SURV-2026-LIVE (Flight 104)</code></div>
-            <div style="font-size: 11px; color: var(--text-muted);">Corridor: Delhi-Mathura Mainline (KM 122.400 - 122.800) • Pilot: <span id="opPilotName">Capt. A. Verma</span></div>
+            <div style="font-size: 11px; color: var(--text-muted);">Corridor: Waltair Mainline (18°18'59.8"N 83°34'10.7"E) • Pilot: <span id="opPilotName">Capt. A. Verma</span></div>
           </div>
           <div class="session-actions" style="display: flex; gap: 8px;">
             <button id="operatorSubmitSurveyBtn" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
@@ -468,13 +410,6 @@
               <div class="canvas-wrapper" id="canvasWrapper">
                 <img id="stillImage" class="canvas-viewport" crossorigin="anonymous" src="sample_data/sample_track_image.jpg" alt="Aerial Rail Track">
                 <canvas id="overlayCanvas"></canvas>
-              </div>
-
-              <div class="hud-bar">
-                <div class="hud-item"><span>Resolution</span><span id="resHudText">2752 × 1536 px</span></div>
-                <div class="hud-item"><span>Drone GSD</span><span>0.65 mm/px</span></div>
-                <div class="hud-item"><span>RTK GPS Fix</span><span id="gpsHudText">28.6148°N, 77.2096°E</span></div>
-                <div class="hud-item"><span>BBox Overlay</span><span id="bboxStatusText" style="color: #38bdf8;">Visible</span></div>
               </div>
             </div>
 
@@ -520,11 +455,14 @@
               <div style="margin-top: 18px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <h4 style="font-size: 13px; color: var(--text-muted);">Detected Defects (Verify & Sign Off)</h4>
-                  <span class="badge badge-cyan" id="operatorVerifiedTally">3 Verified</span>
+                  <span class="badge badge-cyan" id="operatorVerifiedTally">0 Verified</span>
                 </div>
                 <div id="operatorDefectsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 230px; overflow-y: auto;">
                   <!-- Dynamically Populated with Verify / Reject controls -->
                 </div>
+                <button id="downloadStillSurveyCsvBtn" class="btn-secondary" style="width: 100%; margin-top: 10px; font-size: 11px; font-weight: 700; padding: 8px;" onclick="downloadAcceptedDefectsCSV()">
+                  📄 Generate & Download Accepted Defects CSV Report
+                </button>
                 <!-- High-Resolution Defect Crop Gallery (from Railway Production App) -->
                 <div style="margin-top: 14px;">
                   <h4 style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">🔬 Defect Crop Inspection Gallery</h4>
@@ -546,27 +484,16 @@
                 <span class="badge badge-purple"><span class="pulse-dot"></span> ByteTrack Active</span>
               </div>
 
-              <div style="position: relative; width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000;">
-                <video id="patrolVideo" src="sample_data/sample_track_flight.mp4" controls autoplay loop muted style="width: 100%; height: auto; max-height: 480px; display: block;"></video>
-                <div class="video-overlay-hud">
-                  <div class="v-hud-left">
-                    <div>ALT: <span id="vAlt">3.8 m</span> AGL</div>
-                    <div>SPD: <span id="vSpd">6.8 km/h</span></div>
-                    <div>GIMBAL: -45° PITCH</div>
-                  </div>
-                  <div class="v-hud-right">
-                    <div>LAT: <span id="vLat">28.6148° N</span></div>
-                    <div>LON: <span id="vLon">77.2096° E</span></div>
-                    <div>CHAINAGE: <span id="vKm">KM 122.400</span></div>
-                  </div>
-                </div>
+              <div style="margin-bottom: 10px;">
+                <select id="videoSelect" style="width: 100%; background: var(--bg-subtle); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-weight: 600;">
+                  <option value="sample_data/broken_track_patrol.mp4" selected>Broken Track & Fasteners Patrol (10s Flight)</option>
+                  <option value="sample_data/sample_track_flight.mp4">Aerial Corridor Flight (4s Flight)</option>
+                </select>
               </div>
 
-              <div class="hud-bar">
-                <div class="hud-item"><span>Flight Time</span><span id="videoTime">00:04.2s</span></div>
-                <div class="hud-item"><span>Drone Speed</span><span>6.8 km/h</span></div>
-                <div class="hud-item"><span>Altitude AGL</span><span>3.8 m</span></div>
-                <div class="hud-item"><span>Temporal Filter</span><span style="color: #34d399;">3-Hit Consecutive Confirm</span></div>
+              <div style="position: relative; width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000;" id="videoContainer">
+                <video id="patrolVideo" src="sample_data/broken_track_patrol.mp4" controls autoplay loop muted style="width: 100%; height: auto; max-height: 480px; display: block;"></video>
+                <canvas id="videoOverlayCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></canvas>
               </div>
             </div>
 
@@ -598,18 +525,24 @@
                 </div>
               </div>
 
-              <div style="margin-top: 16px;">
+              <!-- Operator Verification List for Video Section -->
+              <div style="margin-top: 18px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <h4 style="font-size: 13px; color: var(--text-muted); margin: 0;">ByteTrack Confirmed Events</h4>
-                  <span class="badge badge-purple" id="videoTrackerStatus">Ready to Scan</span>
+                  <h4 style="font-size: 13px; color: var(--text-muted);">Detected Defects (Verify & Sign Off)</h4>
+                  <span class="badge badge-cyan" id="operatorVerifiedTallyVideo">0 Verified</span>
                 </div>
-                <div id="videoConfirmedEventsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
-                  <div style="font-size: 11px; color: var(--text-muted); padding: 8px; text-align: center;">Click 'Launch ByteTrack Video AI Inspection' to process the drone stream.</div>
+                <div id="operatorDefectsListVideo" style="display: flex; flex-direction: column; gap: 8px; max-height: 230px; overflow-y: auto;">
+                  <!-- Dynamically populated with high-contrast cards and Accept / Reject buttons -->
                 </div>
-                <div style="margin-top: 12px;">
-                  <h4 style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">🎞️ ByteTrack Verified Keyframes</h4>
-                  <div id="videoKeyframeGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; max-height: 120px; overflow-y: auto;">
-                    <!-- Populated dynamically with keyframe images -->
+                <button id="downloadVideoSurveyCsvBtn" class="btn-secondary" style="width: 100%; margin-top: 10px; font-size: 11px; font-weight: 700; padding: 8px;" onclick="downloadAcceptedDefectsCSV()">
+                  📄 Generate & Download Accepted Defects CSV Report
+                </button>
+
+                <!-- High-Resolution Defect Crop Gallery for Video Section -->
+                <div style="margin-top: 14px;">
+                  <h4 style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">🔬 Defect Crop Inspection Gallery</h4>
+                  <div id="defectCropGalleryVideo" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 6px; max-height: 140px; overflow-y: auto;">
+                    <!-- Populated dynamically with high-res crops -->
                   </div>
                 </div>
               </div>
@@ -627,8 +560,8 @@
         <!-- Clearance Header / Work Order Bar -->
         <div class="session-bar" style="border-left: 4px solid var(--yellow-med);">
           <div class="session-info">
-            <div><strong style="color: #fff;">Field Maintenance Work Order:</strong> <span id="clearanceWorkOrderTitle" style="color: #fbbf24;">SURV-2026-LIVE (Delhi-Mathura Mainline)</span></div>
-            <div style="font-size: 11px; color: var(--text-muted);">Assigned P-Way Gang: <span style="color: #fff;" id="clGangName">Gang 12 (Sub-division Agra North)</span> • Status: <span id="clearanceStatusTag" style="color: #fbbf24; font-weight: 700;">PENDING ACTION</span></div>
+            <div><strong style="color: #fff;">Field Maintenance Work Order:</strong> <span id="clearanceWorkOrderTitle" style="color: #fbbf24;">SURV-2026-LIVE (18°18'59.8"N 83°34'10.7"E)</span></div>
+            <div style="font-size: 11px; color: var(--text-muted);">Assigned P-Way Gang: <span style="color: #fff;" id="clGangName">Gang 12 (Sub-division Waltair)</span> • Status: <span id="clearanceStatusTag" style="color: #fbbf24; font-weight: 700;">PENDING ACTION</span></div>
           </div>
           <div class="session-actions" style="display: flex; gap: 8px;">
             <button id="certifySectionClearanceBtn" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);" disabled>
@@ -689,7 +622,7 @@
           <p>You are certifying this drone flight survey as complete. This will commit the official record into the Central TMS Repository and dispatch it to the P-Way Field Clearance Team.</p>
           <div style="background: rgba(15, 23, 42, 0.8); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
             <div><strong>Survey ID:</strong> <span id="modalSurveyId">SURV-2026-LIVE</span></div>
-            <div><strong>Corridor:</strong> Delhi-Mathura Mainline (KM 122.400 - 122.800)</div>
+            <div><strong>Corridor:</strong> Waltair Mainline (18°18'59.8"N 83°34'10.7"E)</div>
             <div><strong>Verified Defects:</strong> <span id="modalDefectsCount">3</span></div>
             <div><strong>Digital Signature:</strong> <span id="modalPilotSign">Capt. A. Verma (Pilot IR-9921)</span></div>
             <div><strong>Timestamp:</strong> <span id="modalTimestamp">-</span></div>
@@ -704,111 +637,46 @@
       </div>
     </div>
 
-    <!-- Modal 2: Official Printable TMS Form P-14 Safety Certificate -->
-    <div class="modal-backdrop" id="certModal" style="display: none;">
-      <div class="modal-box cert-modal-box">
-        <div class="modal-header">
-          <h3 style="font-size: 16px; color: #fff;">📜 Indian Railways Track Safety & Clearance Certificate</h3>
-          <button class="modal-close-btn" id="closeCertModalBtn">&times;</button>
+    <!-- Modal: High-Resolution Defect Crop Zoom Inspector -->
+    <div class="modal-backdrop" id="cropZoomModal" style="display: none;">
+      <div class="modal-box" style="max-width: 540px; width: 90%; background: #0c1322; border: 1px solid #1e293b; border-radius: 14px; box-shadow: 0 24px 48px rgba(0,0,0,0.85); overflow: hidden;">
+        <div class="modal-header" style="border-bottom: 1px solid #1e293b; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; background: #080d1a;">
+          <h3 id="cropModalTitle" style="font-size: 15px; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span>🔍</span> Defect Forensic Crop Inspection
+          </h3>
+          <button class="modal-close-btn" onclick="closeCropZoomModal()" style="font-size: 20px; line-height: 1; cursor: pointer; background: transparent; border: none; color: #94a3b8;">&times;</button>
         </div>
-        
-        <!-- Printable Certificate Paper Container -->
-        <div class="printable-cert-paper" id="printableCertificate">
-          <div class="cert-heading">
-            <div style="font-size: 24px;">🚆</div>
-            <h2>GOVERNMENT OF INDIA • MINISTRY OF RAILWAYS</h2>
-            <h3>PERMANENT WAY INSPECTION & DEFECT CLEARANCE CERTIFICATE</h3>
-            <p><strong>FORM TMS P-14</strong> (Issued under Indian Railways Permanent Way Manual Para 241 & 315)</p>
+        <div style="padding: 18px; text-align: center;">
+          <div style="background: #000; border-radius: 10px; overflow: hidden; display: inline-block; max-width: 100%; border: 1px solid #334155; box-shadow: 0 8px 24px rgba(0,0,0,0.6);">
+            <img id="cropModalImage" src="" alt="Defect Crop" style="max-width: 100%; max-height: 320px; display: block; object-fit: contain; margin: 0 auto;">
           </div>
-
-          <div class="cert-metadata-grid">
-            <div><strong>Certificate No:</strong> IR-TMS-2026-DEL-104</div>
-            <div><strong>Date of Inspection:</strong> 01-Nov-2026</div>
-            <div><strong>Railway Zone:</strong> Northern Railway (NR)</div>
-            <div><strong>Division:</strong> Delhi (DLI)</div>
-            <div><strong>Corridor:</strong> Delhi - Mathura High Speed Line</div>
-            <div><strong>Chainage Range:</strong> KM 122.400 to KM 122.800</div>
-            <div><strong>Inspection Method:</strong> RT-DETR-L 4K Aerial Drone Patrol</div>
-            <div><strong>Clearance Status:</strong> <span id="certStatusText" style="color: #059669; font-weight: 700;">100% DEFECTS CLEARED</span></div>
-          </div>
-
-          <h4 style="margin: 14px 0 6px; font-size: 12px; text-transform: uppercase;">Rectified Physical Track Defects Ledger</h4>
-          <table class="cert-table">
-            <thead>
-              <tr>
-                <th>Defect ID</th>
-                <th>Category</th>
-                <th>Severity</th>
-                <th>Chainage</th>
-                <th>IRPWM Standard Remedial Action Taken</th>
-                <th>Gang Sign-off</th>
-              </tr>
-            </thead>
-            <tbody id="certTableBody">
-              <!-- Dynamically Populated -->
-            </tbody>
-          </table>
-
-          <div class="cert-declaration">
-            <strong>OFFICIAL STATUTORY TRACK FITNESS DECLARATION:</strong><br>
-            "It is hereby certified that the permanent way track between KM 122.400 and KM 122.800 has been thoroughly inspected via autonomous aerial sensor and artificial intelligence vision models. All identified structural track anomalies have been rectified on-site in strict accordance with IRPWM engineering standards. The track is certified <strong>FIT FOR COMMERCIAL TRAIN TRAFFIC AT SANCTIONED SPEED (130 KM/H)</strong>."
-          </div>
-
-          <div class="cert-signatures">
-            <div class="sig-block">
-              <div class="sig-line">Capt. A. Verma</div>
-              <span>Drone Pilot & Sensor Lead (IR-9921)</span>
+          <div style="margin-top: 14px; text-align: left; background: #090f1d; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span id="cropModalDefectName" style="font-size: 15px; font-weight: 800; color: #ffffff;"></span>
+              <span id="cropModalSeverity" class="sev-pill"></span>
             </div>
-            <div class="sig-block">
-              <div class="sig-line">M. Kumar</div>
-              <span>Junior Engineer (P-Way Gang 12)</span>
-            </div>
-            <div class="sig-block">
-              <div class="sig-line">Er. Rajesh Singhania</div>
-              <span>Chief Track Engineer (Divisional HQ)</span>
-            </div>
+            <div style="font-size: 12px; color: #38bdf8; font-weight: 700; margin-bottom: 6px;" id="cropModalConfidence"></div>
+            <div style="font-size: 12px; color: #e2e8f0; line-height: 1.45;" id="cropModalAction"></div>
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button class="btn-secondary" id="closeCertBtn2" style="width: auto; padding: 8px 16px;">Close</button>
-          <button class="btn-primary" onclick="printCertificate()" style="width: auto; padding: 8px 20px; background: #0284c7;">
-            🖨️ Print / Save Official PDF
-          </button>
+        <div class="modal-footer" style="border-top: 1px solid #1e293b; padding: 12px 18px; display: flex; justify-content: flex-end; background: #080d1a;">
+          <button class="btn-secondary" onclick="closeCropZoomModal()" style="width: auto; padding: 6px 16px; font-size: 12px;">Close Preview</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Floating Crop Hover Preview Popover -->
+    <div id="cropHoverPopover" style="display: none; position: fixed; z-index: 9999; pointer-events: none; background: #090f1d; border: 1px solid #38bdf8; border-radius: 10px; padding: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.85); width: 220px; text-align: center; transition: opacity 0.15s ease;">
+      <img id="cropHoverImg" src="" style="width: 100%; height: 130px; object-fit: cover; border-radius: 6px; background: #000; border: 1px solid #1e293b;" alt="Hover Crop">
+      <div id="cropHoverTitle" style="font-size: 12px; font-weight: 800; color: #fff; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+        <span id="cropHoverConf" style="font-size: 11px; font-weight: 700; color: #38bdf8;"></span>
+        <span id="cropHoverSev" class="sev-pill" style="font-size: 9px; padding: 2px 6px;"></span>
       </div>
     </div>
 
     
-    <!-- Modal 3: SQL DDL Schema Viewer -->
-    <div class="modal-backdrop" id="sqlModal" style="display: none;">
-      <div class="modal-box" style="max-width: 820px; width: 95%;">
-        <div class="modal-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 20px;">🗄️</span>
-            <div>
-              <h3 style="font-size: 16px; color: var(--text-main);">Indian Railways TMS Database Schema DDL</h3>
-              <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">SQLite 3, PostgreSQL 12+, MySQL 8.0+ Compatible • 9 Tables & 2 Views</p>
-            </div>
-          </div>
-          <button class="modal-close-btn" id="closeSqlModalBtn">&times;</button>
-        </div>
-        <div class="modal-body" style="padding: 16px;">
-          <pre class="sql-code-box" id="sqlSchemaCodeBox">Loading schema.sql ...</pre>
-        </div>
-        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-          <button class="btn-secondary" id="copySqlSchemaBtn" style="width: auto; padding: 8px 16px;">
-            📋 Copy SQL to Clipboard
-          </button>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-secondary" id="closeSqlModalBtn2" style="width: auto; padding: 8px 16px;">Close</button>
-            <a href="schema.sql" download="railsamiksha_schema.sql" class="btn-primary" style="width: auto; padding: 8px 20px; text-decoration: none; display: inline-flex; align-items: center;">
-              📥 Download schema.sql
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Floating Notification Toasts -->
     <div id="toastContainer" class="toast-container"></div>
@@ -826,6 +694,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=4.1.0"></script>
 </body>
 </html>

@@ -13,26 +13,32 @@ DEFAULT_PYTORCH_WEIGHTS = str(WEIGHTS_DIR / "best.pt")
 DEFAULT_ONNX_WEIGHTS = str(WEIGHTS_DIR / "best.onnx")
 SAMPLES_DIR = BASE_DIR / "samples"
 
-# 9 Canonical Defect Classes (Trained on 2,544 images / 4,293 bboxes)
+# 9 Canonical Fine-Tuned Defect Classes (Ultralytics RT-DETR)
 CLASS_NAMES = {
-    0: "Ballast Defect",
-    1: "Damaged Fastener",
-    2: "Foreign Objects",
-    3: "Missing Fastener",
-    4: "Rail Crack",
-    5: "Rail Joint Damage",
-    6: "Rail Misalignment",
-    7: "Rail Wear",
-    8: "Sleeper Defect",
+    0: "Ballast Deficiency",
+    1: "Ballast Washout",
+    2: "Broken Sleeper",
+    3: "Damaged Fastener",
+    4: "Missing Sleeper",
+    5: "Missing Fastener",
+    6: "Rail Crack",
+    7: "Rail Joint Damage",
+    8: "Rail Misalignment",
 }
 
 # Defect Severity Classification (Indian Railways P-Way Standard)
 SEVERITY_MAPPING = {
     "Rail Crack": "CRITICAL",
+    "Broken Sleeper": "CRITICAL",
+    "Missing Sleeper": "CRITICAL",
+    "Missing  Sleeper": "CRITICAL",
     "Rail Misalignment": "CRITICAL",
     "Rail Joint Damage": "HIGH",
+    "Ballast Washout": "HIGH",
     "Missing Fastener": "HIGH",
     "Damaged Fastener": "MEDIUM",
+    "Ballast Deficiency": "MEDIUM",
+    # Legacy fallbacks
     "Sleeper Defect": "MEDIUM",
     "Foreign Objects": "MEDIUM",
     "Rail Wear": "LOW",
@@ -48,15 +54,15 @@ SEVERITY_COLORS = {
 }
 
 CLASS_COLORS = {
-    0: (6, 182, 212),     # Ballast Defect - Cyan
-    1: (234, 179, 8),     # Damaged Fastener - Gold
-    2: (168, 85, 247),    # Foreign Objects - Purple
-    3: (249, 115, 22),    # Missing Fastener - Orange
-    4: (239, 68, 68),     # Rail Crack - Red (Critical)
-    5: (244, 63, 94),     # Rail Joint Damage - Rose
-    6: (220, 38, 38),     # Rail Misalignment - Dark Red (Critical)
-    7: (16, 185, 129),    # Rail Wear - Emerald
-    8: (59, 130, 246),    # Sleeper Defect - Blue
+    0: (6, 182, 212),     # Ballast Deficiency - Cyan
+    1: (251, 146, 60),    # Ballast Washout - Orange
+    2: (244, 63, 94),     # Broken Sleeper - Crimson
+    3: (234, 179, 8),     # Damaged Fastener - Gold
+    4: (236, 72, 153),    # Missing Sleeper - Magenta
+    5: (245, 158, 11),    # Missing Fastener - Amber
+    6: (239, 68, 68),     # Rail Crack - Red (Critical)
+    7: (249, 115, 22),    # Rail Joint Damage - Solar Orange
+    8: (59, 130, 246),    # Rail Misalignment - Blue
 }
 
 # Defaults

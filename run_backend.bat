@@ -12,6 +12,8 @@ start "" http://localhost:8000
 
 if exist ".venv\Scripts\python.exe" (
     ".venv\Scripts\python.exe" backend\run_server.py
+) else if exist "%LOCALAPPDATA%\Python\bin\python.exe" (
+    "%LOCALAPPDATA%\Python\bin\python.exe" backend\run_server.py
 ) else (
     python backend\run_server.py
 )

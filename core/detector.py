@@ -76,37 +76,41 @@ class RTDETRDetector:
         imgsz: int = 640
     ) -> List[List[Dict[str, Any]]]:
         """
-        Runs batched GPU detection on multiple patches.
+        Runs batched detection on multiple patches in chunks to prevent CPU memory spikes.
         """
         if not patches:
             return []
 
-        results = self.model.predict(
-            source=patches,
-            conf=self.conf_threshold,
-            imgsz=imgsz,
-            device=self.device,
-            verbose=False
-        )
-
         batch_detections = []
-        for res in results:
-            dets = []
-            boxes = res.boxes.xyxy.cpu().numpy()
-            confs = res.boxes.conf.cpu().numpy()
-            classes = res.boxes.cls.cpu().numpy().astype(int)
+        chunk_size = 4
+        for i in range(0, len(patches), chunk_size):
+            chunk = patches[i:i + chunk_size]
+            results = self.model.predict(
+                source=chunk,
+                conf=self.conf_threshold,
+                imgsz=imgsz,
+                device=self.device,
+                verbose=False
+            )
 
-            for box, conf, cid in zip(boxes, confs, classes):
-                cname = self.names.get(cid, f"Defect_{cid}")
-                severity = SEVERITY_MAPPING.get(cname, "MEDIUM")
-                dets.append({
-                    "box": box.tolist(),
-                    "score": float(conf),
-                    "class_id": int(cid),
-                    "class_name": cname,
-                    "severity": severity
-                })
-            batch_detections.append(dets)
+            for res in results:
+                dets = []
+                if res.boxes is not None and len(res.boxes) > 0:
+                    boxes = res.boxes.xyxy.cpu().numpy()
+                    confs = res.boxes.conf.cpu().numpy()
+                    classes = res.boxes.cls.cpu().numpy().astype(int)
+
+                    for box, conf, cid in zip(boxes, confs, classes):
+                        cname = self.names.get(cid, f"Defect_{cid}")
+                        severity = SEVERITY_MAPPING.get(cname, "MEDIUM")
+                        dets.append({
+                            "box": box.tolist(),
+                            "score": float(conf),
+                            "class_id": int(cid),
+                            "class_name": cname,
+                            "severity": severity
+                        })
+                batch_detections.append(dets)
 
         return batch_detections
 

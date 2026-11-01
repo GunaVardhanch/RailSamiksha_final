@@ -59,6 +59,7 @@ class RTDETRDetector:
 
         for box, conf, cid in zip(boxes, confs, classes):
             cname = self.names.get(cid, f"Defect_{cid}")
+            cname = " ".join(str(cname).strip().split())
             severity = SEVERITY_MAPPING.get(cname, "MEDIUM")
             detections.append({
                 "box": box.tolist(),
@@ -98,6 +99,7 @@ class RTDETRDetector:
 
             for box, conf, cid in zip(boxes, confs, classes):
                 cname = self.names.get(cid, f"Defect_{cid}")
+                cname = " ".join(str(cname).strip().split())
                 severity = SEVERITY_MAPPING.get(cname, "MEDIUM")
                 dets.append({
                     "box": box.tolist(),
@@ -130,9 +132,9 @@ def annotate_detections(
         x2, y2 = min(w - 1, x2), min(h - 1, y2)
 
         cid = det.get("class_id", 0)
-        cname = det.get("class_name", "Defect")
+        cname = " ".join(str(det.get("class_name", "Defect")).strip().split())
         conf = det.get("score", 0.0)
-        severity = det.get("severity", "MEDIUM")
+        severity = det.get("severity") or SEVERITY_MAPPING.get(cname, "MEDIUM")
 
         # Color based on class
         color = CLASS_COLORS.get(cid, (239, 68, 68))
