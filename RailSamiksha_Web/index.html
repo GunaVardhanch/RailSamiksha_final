@@ -543,12 +543,21 @@
                 </div>
               </div>
 
-              <div class="control-group">
+                            <div class="control-group">
+                <label class="control-label">AI Model Checkpoint (Select Weights)</label>
+                <select id="modelWeightsSelect" class="select-input" style="font-weight: 600;">
+                  <option value="sanitized_85" selected>RT-DETR-L Sanitized (55.3% Sleeper Precision - 85 Epochs)</option>
+                  <option value="canonical_85">RT-DETR-L Canonical (High Sensitivity - 85 Epochs)</option>
+                  <option value="deployed_prod">RT-DETR-L Production Deployed (53.75% mAP50 Baseline)</option>
+                </select>
+              </div>
+
+<div class="control-group">
                 <div style="display: flex; justify-content: space-between;">
                   <label class="control-label">AI Confidence Threshold</label>
-                  <span id="confVal" style="font-weight: 600; color: var(--cyan-accent);">30%</span>
+                  <span id="confVal" style="font-weight: 600; color: var(--cyan-accent);">20%</span>
                 </div>
-                <input type="range" id="confSlider" min="10" max="90" value="30" step="5" style="width: 100%; accent-color: var(--cyan-accent);">
+                <input type="range" id="confSlider" min="10" max="80" value="20" step="5" style="width: 100%; accent-color: var(--cyan-accent);">
               </div>
 
               <div class="control-group">

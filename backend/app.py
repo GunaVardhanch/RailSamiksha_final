@@ -2,7 +2,7 @@
 RailSamiksha AI — Unified Full-Stack Backend Server
 ===================================================
 Connects:
-  - RT-DETR-L AI Inference Engine (PyTorch / CUDA)
+  - SAHI + RT-DETR-L AI Inference Engine (PyTorch / CUDA)
   - Indian Railways TMS Relational SQL Database (SQLite / PostgreSQL)
   - Role-Based Access Control (RBAC) Authentication
   - Central TMS CSV Reports & Audit Ledger
@@ -37,7 +37,7 @@ from database.db_manager import (
     DB_PATH,
     SCHEMA_PATH
 )
-from backend.inference import get_detector
+from backend.inference import get_detector, MODEL_REGISTRY
 
 WEB_DIR = ROOT_DIR / "RailSamiksha_Web"
 
@@ -46,7 +46,7 @@ WEB_DIR = ROOT_DIR / "RailSamiksha_Web"
 # ============================================================================
 
 async def api_status(request):
-    """Health check, hardware telemetry, and SQL database stats."""
+    """Health check, hardware telemetry, active model, and SQL database stats."""
     import torch
     detector = get_detector()
     stats = get_database_stats()
@@ -60,8 +60,13 @@ async def api_status(request):
             "device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "Host CPU"
         },
         "model": {
-            "architecture": "RT-DETR-L (Real-Time Transformer)",
-            "weights": "release_weights/rtdetr_v3_sanitized_85_best.pt",
+            "architecture": "RT-DETR-L (Real-Time Transformer) + SAHI Patch Slicing",
+            "active_weights": detector.weights_path.name,
+            "available_weights": [
+                {"id": "sanitized_85", "name": "RT-DETR-L Sanitized (55.3% Sleeper Precision - 85 Epochs)"},
+                {"id": "canonical_85", "name": "RT-DETR-L Canonical (High Sensitivity - 85 Epochs)"},
+                {"id": "deployed_prod", "name": "RT-DETR-L Production Deployed (53.75% mAP50 Baseline)"}
+            ],
             "class_count": len(detector.names),
             "classes": detector.names
         },
@@ -163,27 +168,33 @@ async def api_clear_defect(request):
 
 async def api_infer_image(request):
     """
-    Real-Time RT-DETR-L Drone Photo Inference Endpoint.
+    Real-Time SAHI + RT-DETR-L Drone Photo Inference Endpoint.
     Accepts:
       - multipart/form-data with file upload ('file' or 'image')
       - or JSON with base64 image ('image_base64')
-    Returns:
-      - Bounding boxes, confidence, class, severity, IRPWM code, and annotated preview.
+      - optional 'model' ('sanitized_85', 'deployed_prod', 'canonical_85')
+      - optional 'confidence' (e.g. 0.20)
+      - optional 'use_sahi' (true/false)
     """
     image_bytes = None
-    conf_threshold = 0.25
+    conf_threshold = 0.20
+    model_choice = None
+    use_sahi = True
 
-    # Check content type
     content_type = request.headers.get("content-type", "")
 
     if "multipart/form-data" in content_type:
         form = await request.form()
         uploaded_file = form.get("file") or form.get("image")
-        conf_str = form.get("confidence", "0.25")
+        conf_str = form.get("confidence", "0.20")
+        model_choice = form.get("model")
+        use_sahi_str = form.get("use_sahi", "true")
+        use_sahi = str(use_sahi_str).lower() != "false"
+
         try:
             conf_threshold = float(conf_str)
         except ValueError:
-            conf_threshold = 0.25
+            conf_threshold = 0.20
 
         if uploaded_file:
             image_bytes = await uploaded_file.read()
@@ -192,7 +203,9 @@ async def api_infer_image(request):
         try:
             body = await request.json()
             raw_b64 = body.get("image_base64", "")
-            conf_threshold = float(body.get("confidence", 0.25))
+            conf_threshold = float(body.get("confidence", 0.20))
+            model_choice = body.get("model")
+            use_sahi = bool(body.get("use_sahi", True))
             if "," in raw_b64:
                 raw_b64 = raw_b64.split(",")[1]
             image_bytes = base64.b64decode(raw_b64)
@@ -200,13 +213,18 @@ async def api_infer_image(request):
             return JSONResponse({"success": False, "error": f"Invalid base64 image: {str(e)}"}, status_code=400)
 
     if not image_bytes:
-        return JSONResponse({"success": False, "error": "No image data provided. Send a file or image_base64."}, status_code=400)
+        return JSONResponse({"success": False, "error": "No image data provided. Send file or image_base64."}, status_code=400)
 
     try:
         detector = get_detector()
-        result = detector.predict_image(image_bytes, conf_threshold=conf_threshold)
+        if model_choice and model_choice in MODEL_REGISTRY:
+            detector.set_model(model_choice)
+
+        result = detector.predict_image(image_bytes, conf_threshold=conf_threshold, use_sahi=use_sahi)
         return JSONResponse(result)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JSONResponse({"success": False, "error": f"Inference error: {str(e)}"}, status_code=500)
 
 async def api_get_csv_report(request):
@@ -270,7 +288,7 @@ routes = [
     # Defect Clearance & Remediation
     Route("/api/defects/clear", api_clear_defect, methods=["POST"]),
     
-    # AI RT-DETR-L Real-Time Inference
+    # AI RT-DETR-L Real-Time Inference (with SAHI)
     Route("/api/infer/image", api_infer_image, methods=["POST"]),
     
     # TMS CSV Reports

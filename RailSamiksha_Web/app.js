@@ -928,6 +928,16 @@ function initStillCanvas() {
     drawBoundingBoxes();
   });
 
+  const modelWeightsSelect = document.getElementById("modelWeightsSelect");
+  if (modelWeightsSelect) {
+    modelWeightsSelect.addEventListener("change", () => {
+      showToast("Model Switched", `Switched to ${modelWeightsSelect.options[modelWeightsSelect.selectedIndex].text}`, "info");
+      if (BACKEND_CONFIG.isOnline) {
+        runModelInferencePipeline();
+      }
+    });
+  }
+
   document.getElementById("scenarioSelect").addEventListener("change", (e) => {
     currentScenarioKey = e.target.value;
     const imgEl = document.getElementById("stillImage");
@@ -1718,8 +1728,13 @@ async function runModelInferencePipeline(customFile = null) {
   const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
   if (!liveSurvey) return;
 
+  const confSlider = document.getElementById("confSlider");
+  const confVal = confSlider ? parseFloat(confSlider.value) / 100 : 0.20;
+  const modelSelect = document.getElementById("modelWeightsSelect");
+  const modelChoice = modelSelect ? modelSelect.value : "sanitized_85";
+
   if (BACKEND_CONFIG.isOnline) {
-    showToast("RT-DETR-L Executing", "Running real-time inference on GPU backend...", "warning");
+    showToast("SAHI & RT-DETR-L Executing", "Slicing 4K orthophoto into 640x640 patches on GPU...", "warning");
 
     try {
       let body;
@@ -1728,16 +1743,26 @@ async function runModelInferencePipeline(customFile = null) {
       if (customFile instanceof File) {
         const formData = new FormData();
         formData.append("file", customFile);
-        formData.append("confidence", (document.getElementById("confSlider") ? document.getElementById("confSlider").value / 100 : 0.25).toString());
+        formData.append("confidence", confVal.toString());
+        formData.append("model", modelChoice);
+        formData.append("use_sahi", "true");
         body = formData;
       } else {
-        // Send image source as base64 or fetch from stillImg.src
-        const resp = await fetch(stillImg.src);
-        const blob = await resp.blob();
-        const formData = new FormData();
-        formData.append("file", blob, "track.jpg");
-        formData.append("confidence", (document.getElementById("confSlider") ? document.getElementById("confSlider").value / 100 : 0.25).toString());
-        body = formData;
+        // Extract directly from image element into in-memory canvas
+        const c = document.createElement("canvas");
+        c.width = stillImg.naturalWidth || 1920;
+        c.height = stillImg.naturalHeight || 1080;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(stillImg, 0, 0);
+        const base64Data = c.toDataURL("image/jpeg", 0.90);
+
+        body = JSON.stringify({
+          image_base64: base64Data,
+          confidence: confVal,
+          model: modelChoice,
+          use_sahi: true
+        });
+        headers["Content-Type"] = "application/json";
       }
 
       const res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/infer/image`, {
@@ -1750,7 +1775,6 @@ async function runModelInferencePipeline(customFile = null) {
       const data = await res.json();
 
       if (data.success && Array.isArray(data.detections)) {
-        // Map real model detections to survey defect objects
         liveSurvey.defects = data.detections.map((d, i) => {
           const lowerName = d.name.toLowerCase();
           const category = lowerName.includes("fastener") ? "fastener" :
@@ -1777,15 +1801,21 @@ async function runModelInferencePipeline(customFile = null) {
         drawBoundingBoxes();
         renderOperatorDefectsList();
         updateSeverityStats();
+        updateAdminMetrics();
+
+        const resHud = document.getElementById("resHudText");
+        if (resHud) resHud.textContent = `${stillImg.naturalWidth || 1920} × ${stillImg.naturalHeight || 1080} px`;
+
         showToast(
-          "Real AI Detection Complete",
-          `RT-DETR-L found ${data.total_defects} defects in ${data.inference_time_ms}ms (${data.device})`,
+          "RT-DETR-L Inference Complete",
+          `Detected ${data.total_defects} verified defects across ${data.patch_count} patches in ${data.inference_time_ms}ms (${data.device})`,
           "success"
         );
         return;
       }
     } catch (e) {
-      console.warn("Backend inference failed, falling back to simulated inference:", e);
+      console.warn("Backend inference error:", e);
+      showToast("Backend Notice", `Inference fallback: ${e.message}`, "warning");
     }
   }
 

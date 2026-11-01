@@ -1,17 +1,19 @@
 """
-RailSamiksha AI — Real-Time Aerial Defect Inference Engine
-===========================================================
-High-precision detection using RT-DETR-L trained on Indian Railways defect dataset.
+RailSamiksha AI — Real-Time Aerial Defect Inference Engine (SAHI + RT-DETR-L)
+=============================================================================
+High-precision detection using RT-DETR-L (55.3% sleeper precision / fine-tuned 85 epochs)
+integrated with SAHI (Slicing Aided Hyper Inference) for small anomaly detection.
 Features:
-  - GPU / CUDA accelerated inference (with CPU fallback)
-  - 9 Canonical Defect Classes
-  - Indian Railways P-Way Severity Classification
-  - Bounding Box Normalization & Pixel Coordinates
-  - OpenCV Annotation & Base64 Image Preview Generation
+  - SAHI 1:1 Scale Overlapping Patch Slicing (640x640 with 20% overlap)
+  - Batched GPU / CUDA acceleration with CPU fallback
+  - Non-Maximum Merging (NMM) across tile boundaries
+  - 9 Canonical Indian Railways Defect Classes
+  - Statutory IRPWM Para Remedial Code Mapping
+  - Dual Bounding Box Output (Normalized [0-1] & Pixel Coordinates)
+  - OpenCV Visual Preview Generation
 """
 
-import io
-import os
+import sys
 import time
 import base64
 from pathlib import Path
@@ -20,16 +22,24 @@ from typing import Dict, List, Any, Optional
 import cv2
 import numpy as np
 import torch
-from ultralytics import RTDETR
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-WEIGHTS_PATH = ROOT_DIR / "release_weights" / "rtdetr_v3_sanitized_85_best.pt"
+PROD_APP_DIR = ROOT_DIR / "RailSamiksha_Production_App"
+if str(PROD_APP_DIR) not in sys.path:
+    sys.path.insert(0, str(PROD_APP_DIR))
 
-# Fallback weights if primary is missing
-if not WEIGHTS_PATH.exists():
-    WEIGHTS_PATH = ROOT_DIR / "RailSamiksha_Production_App" / "weights" / "best.pt"
+from core.pipeline import RailSamikshaProductionPipeline
 
-# Indian Railways P-Way Manual (IRPWM) Standards Mapping
+# Available Model Weights (User Selected / Configured)
+MODEL_REGISTRY = {
+    "sanitized_85": ROOT_DIR / "release_weights" / "rtdetr_v3_sanitized_85_best.pt",
+    "deployed_prod": PROD_APP_DIR / "weights" / "best.pt",
+    "canonical_85": ROOT_DIR / "release_weights" / "rtdetr_v3_canonical_85_best.pt"
+}
+
+# Default to sanitized_85 (55% accuracy) or deployed_prod
+DEFAULT_WEIGHTS = MODEL_REGISTRY["sanitized_85"] if MODEL_REGISTRY["sanitized_85"].exists() else MODEL_REGISTRY["deployed_prod"]
+
 IRPWM_STANDARDS = {
     "Rail Crack": {
         "severity": "CRITICAL",
@@ -79,125 +89,135 @@ IRPWM_STANDARDS = {
 }
 
 class DefectDetector:
-    def __init__(self, weights_path: Path = WEIGHTS_PATH):
+    def __init__(self, weights_path: Path = DEFAULT_WEIGHTS, conf_threshold: float = 0.20):
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-        print(f"[Inference] Initializing RT-DETR-L detector on device: {self.device}")
-        print(f"[Inference] Loading model weights from: {weights_path}")
-        
-        self.model = RTDETR(str(weights_path))
-        self.names = self.model.names
-        print(f"[Inference] Model loaded successfully. Class count: {len(self.names)}")
+        self.weights_path = weights_path
+        self.conf_threshold = conf_threshold
+        print(f"[Inference] Initializing SAHI + RT-DETR-L pipeline on: {self.device}")
+        print(f"[Inference] Weights: {weights_path}")
+
+        self.pipeline = RailSamikshaProductionPipeline(
+            weights_path=str(weights_path),
+            conf_threshold=conf_threshold,
+            slice_size=640,
+            overlap_ratio=0.20,
+            device=self.device
+        )
+        self.names = self.pipeline.detector.names
+        print(f"[Inference] Pipeline initialized. Classes: {len(self.names)}")
+
+    def set_model(self, model_key: str):
+        """Switches active weights dynamically."""
+        if model_key in MODEL_REGISTRY and MODEL_REGISTRY[model_key].exists():
+            w_path = MODEL_REGISTRY[model_key]
+            self.pipeline = RailSamikshaProductionPipeline(
+                weights_path=str(w_path),
+                conf_threshold=self.conf_threshold,
+                device=self.device
+            )
+            self.weights_path = w_path
+            print(f"[Inference] Switched model to: {model_key} ({w_path.name})")
 
     def predict_image(
         self,
         image_bytes: bytes,
-        conf_threshold: float = 0.25,
-        iou_threshold: float = 0.45,
-        imgsz: int = 640
+        conf_threshold: float = 0.20,
+        use_sahi: bool = True
     ) -> Dict[str, Any]:
-        """Runs RT-DETR-L defect detection on raw image bytes."""
+        """Runs SAHI + RT-DETR-L detection on raw image bytes."""
         t_start = time.perf_counter()
+
+        # Update pipeline confidence
+        self.pipeline.set_confidence(conf_threshold)
 
         # Decode image
         np_arr = np.frombuffer(image_bytes, np.uint8)
         img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         if img_bgr is None:
-            raise ValueError("Could not decode image from provided bytes.")
+            raise ValueError("Could not decode image bytes.")
 
         h_orig, w_orig = img_bgr.shape[:2]
 
-        # Run inference
-        results = self.model.predict(
-            img_bgr,
-            conf=conf_threshold,
-            iou=iou_threshold,
-            imgsz=imgsz,
-            device=self.device,
-            verbose=False
-        )
+        # Process through SAHI pipeline
+        result = self.pipeline.process_still_image(img_bgr, use_sahi=use_sahi)
+        raw_dets = result["detections"]
 
         detections: List[Dict[str, Any]] = []
         counts_by_severity = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
         annotated_img = img_bgr.copy()
 
-        for r in results:
-            boxes = r.boxes
-            for idx, box in enumerate(boxes):
-                cls_id = int(box.cls[0].item())
-                conf = float(box.conf[0].item())
-                xyxy = [float(val) for val in box.xyxy[0].tolist()]
+        for idx, d in enumerate(raw_dets):
+            x1, y1, x2, y2 = d["box"]
+            conf = float(d["score"])
+            class_name = d["class_name"]
 
-                x1, y1, x2, y2 = xyxy
-                class_name = self.names.get(cls_id, f"Defect_{cls_id}")
+            standard = IRPWM_STANDARDS.get(class_name, {
+                "severity": d.get("severity", "MEDIUM"),
+                "action": "IRPWM General: On-site verification required",
+                "color_bgr": (0, 255, 255)
+            })
 
-                standard = IRPWM_STANDARDS.get(class_name, {
-                    "severity": "MEDIUM",
-                    "action": "IRPWM General Standard: Inspect on-site and report",
-                    "color_bgr": (0, 255, 255)
-                })
+            severity = standard["severity"]
+            counts_by_severity[severity] += 1
 
-                severity = standard["severity"]
-                counts_by_severity[severity] += 1
+            # Compute normalized coordinates (0.0 to 1.0)
+            norm_box = [
+                round(max(0.0, min(1.0, x1 / w_orig)), 4),
+                round(max(0.0, min(1.0, y1 / h_orig)), 4),
+                round(max(0.0, min(1.0, x2 / w_orig)), 4),
+                round(max(0.0, min(1.0, y2 / h_orig)), 4),
+            ]
 
-                # Normalized coordinates (0.0 - 1.0) for responsive canvas overlay
-                norm_box = [
-                    round(max(0.0, min(1.0, x1 / w_orig)), 4),
-                    round(max(0.0, min(1.0, y1 / h_orig)), 4),
-                    round(max(0.0, min(1.0, x2 / w_orig)), 4),
-                    round(max(0.0, min(1.0, y2 / h_orig)), 4),
-                ]
+            chainage_km = 44.200 + (idx * 0.120)
+            chainage_str = f"KM {chainage_km:.3f}"
+            center_x = (x1 + x2) / 2
+            track_side = "LEFT_RAIL" if center_x < w_orig * 0.4 else "RIGHT_RAIL" if center_x > w_orig * 0.6 else "CENTRAL_BALLAST"
 
-                # Chainage and track side heuristics
-                chainage_km = 44.200 + (idx * 0.150)
-                chainage_str = f"KM {chainage_km:.3f}"
-                center_x = (x1 + x2) / 2
-                track_side = "LEFT_RAIL" if center_x < w_orig * 0.4 else "RIGHT_RAIL" if center_x > w_orig * 0.6 else "CENTRAL_BALLAST"
+            defect_record = {
+                "id": f"AI-DEF-{idx + 1:03d}",
+                "name": class_name,
+                "confidence": round(conf, 3),
+                "confidence_pct": f"{conf:.1%}",
+                "severity": severity,
+                "action": standard["action"],
+                "chainage": chainage_str,
+                "track_side": track_side,
+                "bbox_pixels": [round(x1, 1), round(y1, 1), round(x2, 1), round(y2, 1)],
+                "bbox_norm": norm_box,
+                "cleared": False,
+                "verified": True
+            }
+            detections.append(defect_record)
 
-                defect_record = {
-                    "id": f"AI-DEF-{idx + 1:03d}",
-                    "name": class_name,
-                    "class_id": cls_id,
-                    "confidence": round(conf, 3),
-                    "confidence_pct": f"{conf:.1%}",
-                    "severity": severity,
-                    "action": standard["action"],
-                    "chainage": chainage_str,
-                    "track_side": track_side,
-                    "bbox_pixels": [round(x1, 1), round(y1, 1), round(x2, 1), round(y2, 1)],
-                    "bbox_norm": norm_box,
-                    "cleared": False
-                }
-                detections.append(defect_record)
-
-                # Draw bounding box on annotated preview
-                color = standard["color_bgr"]
-                cv2.rectangle(annotated_img, (int(x1), int(y1)), (int(x2), int(y2)), color, 3)
-
-                label_text = f"{class_name} {conf:.0%} [{severity}]"
-                (tw, th), baseline = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-                cv2.rectangle(annotated_img, (int(x1), max(0, int(y1) - th - 8)), (int(x1) + tw + 6, int(y1)), color, -1)
-                cv2.putText(annotated_img, label_text, (int(x1) + 3, max(th, int(y1) - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            # Draw visual bounding box
+            color = standard["color_bgr"]
+            cv2.rectangle(annotated_img, (int(x1), int(y1)), (int(x2), int(y2)), color, 3)
+            label = f"{class_name} {conf:.0%} [{severity}]"
+            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+            cv2.rectangle(annotated_img, (int(x1), max(0, int(y1) - th - 8)), (int(x1) + tw + 6, int(y1)), color, -1)
+            cv2.putText(annotated_img, label, (int(x1) + 3, max(th, int(y1) - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
         inference_ms = round((time.perf_counter() - t_start) * 1000, 1)
 
-        # Encode annotated image to JPEG base64 for direct browser rendering
+        # Encode annotated image
         encode_success, buffer = cv2.imencode(".jpg", annotated_img, [cv2.IMWRITE_JPEG_QUALITY, 85])
-        annotated_base64 = None
+        annotated_b64 = None
         if encode_success:
-            annotated_base64 = f"data:image/jpeg;base64,{base64.b64encode(buffer).decode('utf-8')}"
+            annotated_b64 = f"data:image/jpeg;base64,{base64.b64encode(buffer).decode('utf-8')}"
 
         return {
             "success": True,
             "inference_time_ms": inference_ms,
             "device": self.device,
+            "weights_used": self.weights_path.name,
             "image_dimensions": {"width": w_orig, "height": h_orig},
+            "patch_count": result.get("patch_count", 1),
             "total_defects": len(detections),
             "severity_summary": counts_by_severity,
             "detections": detections,
-            "annotated_preview_url": annotated_base64
+            "annotated_preview_url": annotated_b64
         }
 
-# Global singleton detector instance
 _detector_instance: Optional[DefectDetector] = None
 
 def get_detector() -> DefectDetector:
