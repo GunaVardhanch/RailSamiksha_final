@@ -824,20 +824,14 @@ function initCustomUploads() {
     customImgInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (re) => {
-          imgEl.src = re.target.result;
-          imgEl.onload = () => {
-            document.getElementById("resHudText").textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
-            if (BACKEND_CONFIG.isOnline) {
-              runModelInferencePipeline(file);
-            } else {
-              drawBoundingBoxes();
-              showToast("Custom Orthophoto Loaded", `${file.name} ready for analysis`, "success");
-            }
-          };
+        currentUploadedFile = file;
+        const objectUrl = URL.createObjectURL(file);
+        imgEl.onload = () => {
+          document.getElementById("resHudText").textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
+          runModelInferencePipeline(file);
         };
-        reader.readAsDataURL(file);
+        imgEl.src = objectUrl;
+        showToast("Custom Drone Photo Loaded", `${file.name} queued for SAHI inference`, "info");
       }
     });
   }
@@ -1435,6 +1429,7 @@ function downloadCSVFile(csvContent, fileName) {
 // 12. RELATIONAL SQL DATABASE SCHEMA & TMS REPOSITORY ENGINE
 // ============================================================================
 
+let currentUploadedFile = null;
 let currentSqlTable = "users";
 
 function initSqlSchemaUI() {
@@ -1731,33 +1726,28 @@ async function runModelInferencePipeline(customFile = null) {
   const confSlider = document.getElementById("confSlider");
   const confVal = confSlider ? parseFloat(confSlider.value) / 100 : 0.20;
   const modelSelect = document.getElementById("modelWeightsSelect");
-  const modelChoice = modelSelect ? modelSelect.value : "sanitized_85";
+  const modelChoice = modelSelect ? modelSelect.value : "deployed_prod";
+
+  const targetFile = customFile || currentUploadedFile;
 
   if (BACKEND_CONFIG.isOnline) {
-    showToast("SAHI & RT-DETR-L Executing", "Slicing 4K orthophoto into 640x640 patches on GPU...", "warning");
+    showToast("Production AI Pipeline Active", "Running SAHI patch slicing + RT-DETR-L on GPU...", "warning");
 
     try {
       let body;
       let headers = {};
 
-      if (customFile instanceof File) {
+      if (targetFile instanceof File) {
         const formData = new FormData();
-        formData.append("file", customFile);
+        formData.append("file", targetFile);
         formData.append("confidence", confVal.toString());
         formData.append("model", modelChoice);
         formData.append("use_sahi", "true");
         body = formData;
       } else {
-        // Extract directly from image element into in-memory canvas
-        const c = document.createElement("canvas");
-        c.width = stillImg.naturalWidth || 1920;
-        c.height = stillImg.naturalHeight || 1080;
-        const ctx = c.getContext("2d");
-        ctx.drawImage(stillImg, 0, 0);
-        const base64Data = c.toDataURL("image/jpeg", 0.90);
-
+        // Send sample_name for zero-loss server-side loading from Railway Production App samples
         body = JSON.stringify({
-          image_base64: base64Data,
+          sample_name: "sample_track_image.jpg",
           confidence: confVal,
           model: modelChoice,
           use_sahi: true
@@ -1798,6 +1788,22 @@ async function runModelInferencePipeline(customFile = null) {
           };
         });
 
+        // Render high-res Defect Crop Gallery (identical to Railway Production App)
+        const gallery = document.getElementById("defectCropGallery");
+        if (gallery) {
+          if (Array.isArray(data.crops) && data.crops.length > 0) {
+            gallery.innerHTML = data.crops.map(c => `
+              <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; text-align: center;">
+                <img src="${c.crop_url}" style="width: 100%; height: 50px; object-fit: cover; border-radius: 4px;" alt="${c.class_name}">
+                <div style="font-size: 9px; font-weight: 700; color: var(--text-main); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.class_name}</div>
+                <div style="font-size: 8px; color: var(--cyan-accent); font-weight: 600;">${c.confidence_pct}</div>
+              </div>
+            `).join("");
+          } else {
+            gallery.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No defect crops extracted.</div>';
+          }
+        }
+
         drawBoundingBoxes();
         renderOperatorDefectsList();
         updateSeverityStats();
@@ -1807,8 +1813,8 @@ async function runModelInferencePipeline(customFile = null) {
         if (resHud) resHud.textContent = `${stillImg.naturalWidth || 1920} × ${stillImg.naturalHeight || 1080} px`;
 
         showToast(
-          "RT-DETR-L Inference Complete",
-          `Detected ${data.total_defects} verified defects across ${data.patch_count} patches in ${data.inference_time_ms}ms (${data.device})`,
+          "Real-Time Detection Successful",
+          `RT-DETR-L found ${data.total_defects} verified defects (${data.weights_used}) in ${data.inference_time_ms}ms`,
           "success"
         );
         return;

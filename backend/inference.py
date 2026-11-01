@@ -1,16 +1,13 @@
 """
-RailSamiksha AI — Real-Time Aerial Defect Inference Engine (SAHI + RT-DETR-L)
-=============================================================================
-High-precision detection using RT-DETR-L (55.3% sleeper precision / fine-tuned 85 epochs)
-integrated with SAHI (Slicing Aided Hyper Inference) for small anomaly detection.
-Features:
-  - SAHI 1:1 Scale Overlapping Patch Slicing (640x640 with 20% overlap)
-  - Batched GPU / CUDA acceleration with CPU fallback
-  - Non-Maximum Merging (NMM) across tile boundaries
-  - 9 Canonical Indian Railways Defect Classes
-  - Statutory IRPWM Para Remedial Code Mapping
-  - Dual Bounding Box Output (Normalized [0-1] & Pixel Coordinates)
-  - OpenCV Visual Preview Generation
+RailSamiksha AI — Production Defect Detection Engine
+====================================================
+Uses the exact production pipeline from RailSamiksha_Production_App:
+  - Deployed model weights: RailSamiksha_Production_App/weights/best.pt
+  - SAHI 1:1 Scale Patch Slicing (640x640 with 20% overlap)
+  - Non-Maximum Merging (NMM) across patch boundaries
+  - ByteTrack Temporal Tracking
+  - Exact OpenCV Annotations from core.detector.annotate_detections
+  - High-Resolution Defect Crop Gallery Generation
 """
 
 import sys
@@ -28,83 +25,57 @@ PROD_APP_DIR = ROOT_DIR / "RailSamiksha_Production_App"
 if str(PROD_APP_DIR) not in sys.path:
     sys.path.insert(0, str(PROD_APP_DIR))
 
+from config import (
+    DEFAULT_PYTORCH_WEIGHTS,
+    DEFAULT_ONNX_WEIGHTS,
+    CLASS_NAMES,
+    SEVERITY_MAPPING,
+    SEVERITY_COLORS,
+    CLASS_COLORS,
+    DEFAULT_CONF
+)
 from core.pipeline import RailSamikshaProductionPipeline
+from core.detector import annotate_detections
 
-# Available Model Weights (User Selected / Configured)
+# Model Checkpoint Registry
 MODEL_REGISTRY = {
-    "sanitized_85": ROOT_DIR / "release_weights" / "rtdetr_v3_sanitized_85_best.pt",
     "deployed_prod": PROD_APP_DIR / "weights" / "best.pt",
+    "sanitized_85": ROOT_DIR / "release_weights" / "rtdetr_v3_sanitized_85_best.pt",
     "canonical_85": ROOT_DIR / "release_weights" / "rtdetr_v3_canonical_85_best.pt"
 }
 
-# Default to sanitized_85 (55% accuracy) or deployed_prod
-DEFAULT_WEIGHTS = MODEL_REGISTRY["sanitized_85"] if MODEL_REGISTRY["sanitized_85"].exists() else MODEL_REGISTRY["deployed_prod"]
+# Primary default weights: the fully working deployed model from RailSamiksha_Production_App
+PRIMARY_WEIGHTS = MODEL_REGISTRY["deployed_prod"] if MODEL_REGISTRY["deployed_prod"].exists() else Path(DEFAULT_PYTORCH_WEIGHTS)
 
-IRPWM_STANDARDS = {
-    "Rail Crack": {
-        "severity": "CRITICAL",
-        "action": "IRPWM Para 268: Emergency fishplate clamping & 20 kmph stop order",
-        "color_bgr": (68, 68, 239)   # Red
-    },
-    "Rail Misalignment": {
-        "severity": "CRITICAL",
-        "action": "IRPWM Para 224: Immediate track slew realignment & speed restriction",
-        "color_bgr": (38, 38, 220)   # Dark Red
-    },
-    "Rail Joint Damage": {
-        "severity": "HIGH",
-        "action": "IRPWM Para 241: Re-torque fishplate bolts to 650 Nm or weld joint",
-        "color_bgr": (94, 63, 244)   # Rose / Orange-Red
-    },
-    "Missing Fastener": {
-        "severity": "HIGH",
-        "action": "IRPWM Para 257: Install standard ERC clip & rubber pad within 24h",
-        "color_bgr": (22, 115, 249)  # Orange
-    },
-    "Damaged Fastener": {
-        "severity": "MEDIUM",
-        "action": "IRPWM Para 257: Replace Pandrol e-clip with RDSO approved MK-III",
-        "color_bgr": (8, 179, 234)   # Gold / Amber
-    },
-    "Sleeper Defect": {
-        "severity": "MEDIUM",
-        "action": "IRPWM Para 234: Mark for spot PSC sleeper replacement in next block",
-        "color_bgr": (246, 130, 59)  # Blue
-    },
-    "Foreign Objects": {
-        "severity": "MEDIUM",
-        "action": "IRPWM Para 219: Immediate manual track clearance of obstructions",
-        "color_bgr": (247, 85, 168)  # Purple
-    },
-    "Rail Wear": {
-        "severity": "LOW",
-        "action": "IRPWM Para 302: Lubricate rail gauge face & profile grind",
-        "color_bgr": (129, 185, 16)  # Emerald
-    },
-    "Ballast Defect": {
-        "severity": "LOW",
-        "action": "IRPWM Para 228: Replenish 250mm ballast cushion & tamp",
-        "color_bgr": (212, 182, 6)   # Cyan
-    }
+IRPWM_ACTIONS = {
+    "Rail Crack": "IRPWM Para 268: Emergency fishplate clamping & 20 kmph stop order",
+    "Rail Misalignment": "IRPWM Para 224: Immediate track slew realignment & speed restriction",
+    "Rail Joint Damage": "IRPWM Para 241: Re-torque fishplate bolts to 650 Nm or weld joint",
+    "Missing Fastener": "IRPWM Para 257: Install standard ERC clip & rubber pad within 24h",
+    "Damaged Fastener": "IRPWM Para 257: Replace Pandrol e-clip with RDSO approved MK-III",
+    "Sleeper Defect": "IRPWM Para 234: Mark for spot PSC sleeper replacement in next block",
+    "Foreign Objects": "IRPWM Para 219: Immediate manual track clearance of obstructions",
+    "Rail Wear": "IRPWM Para 302: Lubricate rail gauge face & profile grind",
+    "Ballast Defect": "IRPWM Para 228: Replenish 250mm ballast cushion & tamp"
 }
 
-class DefectDetector:
-    def __init__(self, weights_path: Path = DEFAULT_WEIGHTS, conf_threshold: float = 0.20):
+class ProductionDefectDetector:
+    def __init__(self, weights_path: Path = PRIMARY_WEIGHTS, conf_threshold: float = 0.20):
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.weights_path = weights_path
         self.conf_threshold = conf_threshold
-        print(f"[Inference] Initializing SAHI + RT-DETR-L pipeline on: {self.device}")
-        print(f"[Inference] Weights: {weights_path}")
+        print(f"[Inference Engine] Loading deployed production model on: {self.device}")
+        print(f"[Inference Engine] Weights path: {self.weights_path}")
 
         self.pipeline = RailSamikshaProductionPipeline(
-            weights_path=str(weights_path),
+            weights_path=str(self.weights_path),
             conf_threshold=conf_threshold,
             slice_size=640,
             overlap_ratio=0.20,
             device=self.device
         )
         self.names = self.pipeline.detector.names
-        print(f"[Inference] Pipeline initialized. Classes: {len(self.names)}")
+        print(f"[Inference Engine] Ready. Total Classes: {len(self.names)}")
 
     def set_model(self, model_key: str):
         """Switches active weights dynamically."""
@@ -116,7 +87,7 @@ class DefectDetector:
                 device=self.device
             )
             self.weights_path = w_path
-            print(f"[Inference] Switched model to: {model_key} ({w_path.name})")
+            print(f"[Inference Engine] Switched weights to: {model_key} ({w_path.name})")
 
     def predict_image(
         self,
@@ -124,43 +95,37 @@ class DefectDetector:
         conf_threshold: float = 0.20,
         use_sahi: bool = True
     ) -> Dict[str, Any]:
-        """Runs SAHI + RT-DETR-L detection on raw image bytes."""
+        """Runs the exact production inspection on raw image bytes."""
         t_start = time.perf_counter()
 
-        # Update pipeline confidence
         self.pipeline.set_confidence(conf_threshold)
 
         # Decode image
         np_arr = np.frombuffer(image_bytes, np.uint8)
         img_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         if img_bgr is None:
-            raise ValueError("Could not decode image bytes.")
+            raise ValueError("Could not decode image from provided bytes.")
 
         h_orig, w_orig = img_bgr.shape[:2]
 
-        # Process through SAHI pipeline
-        result = self.pipeline.process_still_image(img_bgr, use_sahi=use_sahi)
-        raw_dets = result["detections"]
+        # Process through production pipeline
+        results = self.pipeline.process_still_image(img_bgr, use_sahi=use_sahi)
+        raw_dets = results["detections"]
+        annotated_bgr = results["annotated_image"]
 
         detections: List[Dict[str, Any]] = []
+        crops: List[Dict[str, Any]] = []
         counts_by_severity = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-        annotated_img = img_bgr.copy()
 
         for idx, d in enumerate(raw_dets):
-            x1, y1, x2, y2 = d["box"]
+            x1, y1, x2, y2 = [float(v) for v in d["box"]]
             conf = float(d["score"])
             class_name = d["class_name"]
+            severity = d.get("severity", SEVERITY_MAPPING.get(class_name, "MEDIUM"))
 
-            standard = IRPWM_STANDARDS.get(class_name, {
-                "severity": d.get("severity", "MEDIUM"),
-                "action": "IRPWM General: On-site verification required",
-                "color_bgr": (0, 255, 255)
-            })
+            counts_by_severity[severity] = counts_by_severity.get(severity, 0) + 1
 
-            severity = standard["severity"]
-            counts_by_severity[severity] += 1
-
-            # Compute normalized coordinates (0.0 to 1.0)
+            # Normalized coordinates (0.0 to 1.0)
             norm_box = [
                 round(max(0.0, min(1.0, x1 / w_orig)), 4),
                 round(max(0.0, min(1.0, y1 / h_orig)), 4),
@@ -172,14 +137,16 @@ class DefectDetector:
             chainage_str = f"KM {chainage_km:.3f}"
             center_x = (x1 + x2) / 2
             track_side = "LEFT_RAIL" if center_x < w_orig * 0.4 else "RIGHT_RAIL" if center_x > w_orig * 0.6 else "CENTRAL_BALLAST"
+            action_code = IRPWM_ACTIONS.get(class_name, "IRPWM General Standard: Detailed track inspection required")
 
             defect_record = {
-                "id": f"AI-DEF-{idx + 1:03d}",
+                "id": f"DEF-{idx + 1:03d}",
                 "name": class_name,
+                "class_id": d.get("class_id", 0),
                 "confidence": round(conf, 3),
                 "confidence_pct": f"{conf:.1%}",
                 "severity": severity,
-                "action": standard["action"],
+                "action": action_code,
                 "chainage": chainage_str,
                 "track_side": track_side,
                 "bbox_pixels": [round(x1, 1), round(y1, 1), round(x2, 1), round(y2, 1)],
@@ -189,21 +156,28 @@ class DefectDetector:
             }
             detections.append(defect_record)
 
-            # Draw visual bounding box
-            color = standard["color_bgr"]
-            cv2.rectangle(annotated_img, (int(x1), int(y1)), (int(x2), int(y2)), color, 3)
-            label = f"{class_name} {conf:.0%} [{severity}]"
-            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-            cv2.rectangle(annotated_img, (int(x1), max(0, int(y1) - th - 8)), (int(x1) + tw + 6, int(y1)), color, -1)
-            cv2.putText(annotated_img, label, (int(x1) + 3, max(th, int(y1) - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            # Generate close-up crop
+            crop_x1 = max(0, int(x1) - 20)
+            crop_y1 = max(0, int(y1) - 20)
+            crop_x2 = min(w_orig, int(x2) + 20)
+            crop_y2 = min(h_orig, int(y2) + 20)
+            crop_img = img_bgr[crop_y1:crop_y2, crop_x1:crop_x2]
+            if crop_img.size > 0:
+                ok, c_buf = cv2.imencode(".jpg", crop_img, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                if ok:
+                    crops.append({
+                        "id": defect_record["id"],
+                        "class_name": class_name,
+                        "confidence_pct": defect_record["confidence_pct"],
+                        "severity": severity,
+                        "crop_url": f"data:image/jpeg;base64,{base64.b64encode(c_buf).decode('utf-8')}"
+                    })
 
         inference_ms = round((time.perf_counter() - t_start) * 1000, 1)
 
-        # Encode annotated image
-        encode_success, buffer = cv2.imencode(".jpg", annotated_img, [cv2.IMWRITE_JPEG_QUALITY, 85])
-        annotated_b64 = None
-        if encode_success:
-            annotated_b64 = f"data:image/jpeg;base64,{base64.b64encode(buffer).decode('utf-8')}"
+        # Convert annotated image to base64
+        ok, a_buf = cv2.imencode(".jpg", annotated_bgr, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        annotated_b64 = f"data:image/jpeg;base64,{base64.b64encode(a_buf).decode('utf-8')}" if ok else None
 
         return {
             "success": True,
@@ -211,17 +185,18 @@ class DefectDetector:
             "device": self.device,
             "weights_used": self.weights_path.name,
             "image_dimensions": {"width": w_orig, "height": h_orig},
-            "patch_count": result.get("patch_count", 1),
+            "patch_count": results.get("patch_count", 1),
             "total_defects": len(detections),
             "severity_summary": counts_by_severity,
             "detections": detections,
+            "crops": crops,
             "annotated_preview_url": annotated_b64
         }
 
-_detector_instance: Optional[DefectDetector] = None
+_detector_singleton: Optional[ProductionDefectDetector] = None
 
-def get_detector() -> DefectDetector:
-    global _detector_instance
-    if _detector_instance is None:
-        _detector_instance = DefectDetector()
-    return _detector_instance
+def get_detector() -> ProductionDefectDetector:
+    global _detector_singleton
+    if _detector_singleton is None:
+        _detector_singleton = ProductionDefectDetector()
+    return _detector_singleton

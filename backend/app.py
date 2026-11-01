@@ -169,16 +169,18 @@ async def api_clear_defect(request):
 async def api_infer_image(request):
     """
     Real-Time SAHI + RT-DETR-L Drone Photo Inference Endpoint.
+    Uses exact RailSamiksha_Production_App pipeline.
     Accepts:
       - multipart/form-data with file upload ('file' or 'image')
       - or JSON with base64 image ('image_base64')
-      - optional 'model' ('sanitized_85', 'deployed_prod', 'canonical_85')
-      - optional 'confidence' (e.g. 0.20)
-      - optional 'use_sahi' (true/false)
+      - or 'sample_name' (e.g. 'sample_track_image.jpg')
+      - optional 'model' ('deployed_prod', 'sanitized_85', 'canonical_85')
+      - optional 'confidence' (default 0.20)
+      - optional 'use_sahi' (default true)
     """
     image_bytes = None
     conf_threshold = 0.20
-    model_choice = None
+    model_choice = "deployed_prod"
     use_sahi = True
 
     content_type = request.headers.get("content-type", "")
@@ -187,7 +189,8 @@ async def api_infer_image(request):
         form = await request.form()
         uploaded_file = form.get("file") or form.get("image")
         conf_str = form.get("confidence", "0.20")
-        model_choice = form.get("model")
+        model_choice = form.get("model", "deployed_prod")
+        sample_name = form.get("sample_name", "")
         use_sahi_str = form.get("use_sahi", "true")
         use_sahi = str(use_sahi_str).lower() != "false"
 
@@ -196,24 +199,41 @@ async def api_infer_image(request):
         except ValueError:
             conf_threshold = 0.20
 
-        if uploaded_file:
+        if uploaded_file and hasattr(uploaded_file, "read"):
             image_bytes = await uploaded_file.read()
+        elif sample_name:
+            sample_p = PROD_APP_DIR / "samples" / sample_name
+            if sample_p.exists():
+                with open(sample_p, "rb") as f:
+                    image_bytes = f.read()
 
     elif "application/json" in content_type:
         try:
             body = await request.json()
             raw_b64 = body.get("image_base64", "")
             conf_threshold = float(body.get("confidence", 0.20))
-            model_choice = body.get("model")
+            model_choice = body.get("model", "deployed_prod")
+            sample_name = body.get("sample_name", "")
             use_sahi = bool(body.get("use_sahi", True))
-            if "," in raw_b64:
-                raw_b64 = raw_b64.split(",")[1]
-            image_bytes = base64.b64decode(raw_b64)
-        except Exception as e:
-            return JSONResponse({"success": False, "error": f"Invalid base64 image: {str(e)}"}, status_code=400)
 
+            if sample_name:
+                sample_p = PROD_APP_DIR / "samples" / sample_name
+                if sample_p.exists():
+                    with open(sample_p, "rb") as f:
+                        image_bytes = f.read()
+            elif raw_b64:
+                if "," in raw_b64:
+                    raw_b64 = raw_b64.split(",")[1]
+                image_bytes = base64.b64decode(raw_b64)
+        except Exception as e:
+            return JSONResponse({"success": False, "error": f"Invalid request body: {str(e)}"}, status_code=400)
+
+    # Fallback to default sample track image if no bytes provided
     if not image_bytes:
-        return JSONResponse({"success": False, "error": "No image data provided. Send file or image_base64."}, status_code=400)
+        default_sample = PROD_APP_DIR / "samples" / "sample_track_image.jpg"
+        if default_sample.exists():
+            with open(default_sample, "rb") as f:
+                image_bytes = f.read()
 
     try:
         detector = get_detector()
@@ -223,6 +243,9 @@ async def api_infer_image(request):
         result = detector.predict_image(image_bytes, conf_threshold=conf_threshold, use_sahi=use_sahi)
         return JSONResponse(result)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"success": False, "error": f"Inference error: {str(e)}"}, status_code=500)
         import traceback
         traceback.print_exc()
         return JSONResponse({"success": False, "error": f"Inference error: {str(e)}"}, status_code=500)

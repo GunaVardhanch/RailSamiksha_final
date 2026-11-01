@@ -512,7 +512,7 @@
               </div>
 
               <div class="canvas-wrapper" id="canvasWrapper">
-                <img id="stillImage" class="canvas-viewport" src="sample_data/sample_track_image.jpg" alt="Aerial Rail Track">
+                <img id="stillImage" class="canvas-viewport" crossorigin="anonymous" src="sample_data/sample_track_image.jpg" alt="Aerial Rail Track">
                 <canvas id="overlayCanvas"></canvas>
               </div>
 
@@ -546,9 +546,9 @@
                             <div class="control-group">
                 <label class="control-label">AI Model Checkpoint (Select Weights)</label>
                 <select id="modelWeightsSelect" class="select-input" style="font-weight: 600;">
-                  <option value="sanitized_85" selected>RT-DETR-L Sanitized (55.3% Sleeper Precision - 85 Epochs)</option>
+                  <option value="deployed_prod" selected>RT-DETR-L Deployed Production App (Railway Production Model)</option>
+                  <option value="sanitized_85">RT-DETR-L Sanitized (55.3% Sleeper Precision - 85 Epochs)</option>
                   <option value="canonical_85">RT-DETR-L Canonical (High Sensitivity - 85 Epochs)</option>
-                  <option value="deployed_prod">RT-DETR-L Production Deployed (53.75% mAP50 Baseline)</option>
                 </select>
               </div>
 
@@ -583,6 +583,13 @@
                 </div>
                 <div id="operatorDefectsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 230px; overflow-y: auto;">
                   <!-- Dynamically Populated with Verify / Reject controls -->
+                </div>
+                <!-- High-Resolution Defect Crop Gallery (from Railway Production App) -->
+                <div style="margin-top: 14px;">
+                  <h4 style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">🔬 Defect Crop Inspection Gallery</h4>
+                  <div id="defectCropGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 6px; max-height: 140px; overflow-y: auto;">
+                    <!-- Populated dynamically with high-res crops -->
+                  </div>
                 </div>
               </div>
             </div>
