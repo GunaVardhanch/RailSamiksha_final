@@ -1,0 +1,16 @@
+{
+  "name": "RailSamiksha AI — Autonomous Aerial Track Inspection",
+  "short_name": "RailSamiksha",
+  "description": "Enterprise Aerial Railway Track Defect Inspection Platform powered by RT-DETR-L and Indian Railways TMS standards.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070b12",
+  "theme_color": "#06b6d4",
+  "icons": [
+    {
+      "src": "sample_data/sample_track_image.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    }
+  ]
+}

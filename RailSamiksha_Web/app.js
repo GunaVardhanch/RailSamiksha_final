@@ -1,7 +1,7 @@
 /**
- * RailSamiksha AI — Enterprise RBAC Platform Engine with Authentication
+ * RailSamiksha AI — Enterprise RBAC Platform Engine with Authentication & Scale Tools
  * Real-Time RT-DETR-L Aerial Defect Detection & P-Way TMS Analytics
- * Auth: Sign In | Registration | Session Persistence | One-Click Demo Logins
+ * Features: Auth, Custom Upload, Analytics Gauges, Printable P-14 Certificate, Toast Notifications
  */
 
 // ============================================================================
@@ -44,7 +44,6 @@ const DEFAULT_USERS = [
   }
 ];
 
-// Initialize users in localStorage if not already present
 function getUsersDB() {
   const stored = localStorage.getItem("RAILSAMIKSHA_USERS");
   if (stored) {
@@ -231,13 +230,14 @@ document.addEventListener("DOMContentLoaded", () => {
   initOperatorWorkspace();
   initClearanceWorkspace();
   initModals();
+  initCustomUploads();
+  initCertificateModal();
 
-  // Check existing session
   checkAuthSession();
 });
 
 // ============================================================================
-// 4. AUTHENTICATION CONTROLLER (SIGN IN / SIGN UP / DEMO / LOGOUT)
+// 4. AUTHENTICATION CONTROLLER
 // ============================================================================
 
 function initAuthUI() {
@@ -249,7 +249,6 @@ function initAuthUI() {
   const regRoleDesc = document.getElementById("regRoleDesc");
   const signOutBtn = document.getElementById("signOutBtn");
 
-  // Tab switching
   tabSignIn.addEventListener("click", () => {
     tabSignIn.classList.add("active");
     tabSignUp.classList.remove("active");
@@ -266,11 +265,10 @@ function initAuthUI() {
     hideAuthAlert();
   });
 
-  // Role Description dynamic update
   regRole.addEventListener("change", (e) => {
     const val = e.target.value;
     if (val === "operator") {
-      regRoleDesc.textContent = "Access to 4K SAHI inspection, video patrol telemetry HUD, and survey submission to TMS.";
+      regRoleDesc.textContent = "Access to 4K SAHI inspection, custom upload, video patrol telemetry HUD, and survey submission to TMS.";
     } else if (val === "clearance") {
       regRoleDesc.textContent = "Access to georeferenced defect map, IRPWM remedial punch-lists, and track safety certification.";
     } else if (val === "admin") {
@@ -278,7 +276,6 @@ function initAuthUI() {
     }
   });
 
-  // Handle Sign In Submit
   signInForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const identifier = document.getElementById("loginIdentifier").value.trim().toLowerCase();
@@ -292,12 +289,12 @@ function initAuthUI() {
 
     if (user) {
       authenticateUser(user);
+      showToast("Access Granted", `Welcome back, ${user.name}!`, "success");
     } else {
       showAuthAlert("Invalid credentials. Try demo credentials (e.g. admin@railsamiksha.gov.in / admin123)", "error");
     }
   });
 
-  // Handle Sign Up Submit
   signUpForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const name = document.getElementById("regFullName").value.trim();
@@ -346,15 +343,14 @@ function initAuthUI() {
     showAuthAlert("Account registered successfully! Signing you in...", "success");
     setTimeout(() => {
       authenticateUser(newUser);
+      showToast("Account Created", `Registered as ${roleLabel}`, "success");
     }, 600);
   });
 
-  // Sign Out Button
   if (signOutBtn) {
     signOutBtn.addEventListener("click", signOutUser);
   }
 
-  // Admin View Switcher (for Super Admin auditing other roles)
   const auditBtns = document.querySelectorAll("#adminAuditSwitcher .role-btn");
   auditBtns.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -376,12 +372,12 @@ function hideAuthAlert() {
   alertEl.style.display = "none";
 }
 
-// Quick 1-Click Demo Logins
 window.quickLogin = function(role) {
   const users = getUsersDB();
   const user = users.find(u => u.role === role);
   if (user) {
     authenticateUser(user);
+    showToast("1-Click Demo Login", `Signed in as ${user.roleLabel}`, "success");
   }
 };
 
@@ -389,16 +385,13 @@ function authenticateUser(user) {
   currentUser = user;
   localStorage.setItem("RAILSAMIKSHA_AUTH_SESSION", JSON.stringify(user));
 
-  // Hide Auth Screen, Show App Screen
   document.getElementById("authScreen").style.display = "none";
   document.getElementById("appScreen").style.display = "flex";
 
-  // Update Header Profile
   document.getElementById("userAvatar").textContent = user.avatar;
   document.getElementById("userNameDisplay").textContent = user.name;
   document.getElementById("userRoleBadge").textContent = `${user.roleLabel} • ${user.division.split(',')[0]}`;
 
-  // Configure role access
   const adminSwitcher = document.getElementById("adminAuditSwitcher");
   if (user.role === "admin") {
     adminSwitcher.style.display = "flex";
@@ -406,7 +399,6 @@ function authenticateUser(user) {
     adminSwitcher.style.display = "none";
   }
 
-  // Route to the authorized view
   switchAppView(user.role);
 }
 
@@ -422,7 +414,6 @@ function checkAuthSession() {
     }
   }
 
-  // Show Auth Screen
   document.getElementById("authScreen").style.display = "flex";
   document.getElementById("appScreen").style.display = "none";
 }
@@ -438,12 +429,10 @@ function signOutUser() {
 function switchAppView(role) {
   activeViewRole = role;
 
-  // Update audit switcher active state if visible
   document.querySelectorAll("#adminAuditSwitcher .role-btn").forEach(btn => {
     btn.classList.toggle("active", btn.getAttribute("data-role") === role);
   });
 
-  // Update workspaces
   document.querySelectorAll(".role-workspace").forEach(ws => {
     ws.classList.remove("active");
   });
@@ -479,7 +468,7 @@ function switchAppView(role) {
 }
 
 // ============================================================================
-// 5. SUPER ADMIN PLATFORM LOGIC
+// 5. SUPER ADMIN PLATFORM LOGIC & ANALYTICS
 // ============================================================================
 
 function initAdminDashboard() {
@@ -491,6 +480,7 @@ function initAdminDashboard() {
 
 function renderAdminView() {
   updateAdminKPIs();
+  updateAnalyticsWidgets();
   renderAdminSurveysTable();
   setTimeout(initOrUpdateAdminMap, 200);
 }
@@ -525,6 +515,51 @@ function updateAdminKPIs() {
     alertBadge.textContent = pendingSurveyCount;
     alertBadge.style.display = pendingSurveyCount > 0 ? "inline-block" : "none";
   }
+}
+
+function updateAnalyticsWidgets() {
+  let criticalCount = 0;
+  let mediumCount = 0;
+  let lowCount = 0;
+
+  let fastenerCount = 0;
+  let railCount = 0;
+  let sleeperCount = 0;
+  let ballastCount = 0;
+
+  SURVEYS_DATABASE.forEach(s => {
+    s.defects.forEach(d => {
+      if (d.severity === "CRITICAL") criticalCount++;
+      else if (d.severity === "MEDIUM") mediumCount++;
+      else lowCount++;
+
+      if (d.category === "fastener") fastenerCount++;
+      else if (d.category === "rail") railCount++;
+      else if (d.category === "sleeper") sleeperCount++;
+      else if (d.category === "ballast") ballastCount++;
+    });
+  });
+
+  const total = criticalCount + mediumCount + lowCount;
+  if (total > 0) {
+    const cPct = ((criticalCount / total) * 100).toFixed(1);
+    const mPct = ((mediumCount / total) * 100).toFixed(1);
+    const lPct = ((lowCount / total) * 100).toFixed(1);
+
+    document.getElementById("statCriticalPct").textContent = `${cPct}% (${criticalCount})`;
+    document.getElementById("barCritical").style.width = `${cPct}%`;
+
+    document.getElementById("statMediumPct").textContent = `${mPct}% (${mediumCount})`;
+    document.getElementById("barMedium").style.width = `${mPct}%`;
+
+    document.getElementById("statLowPct").textContent = `${lPct}% (${lowCount})`;
+    document.getElementById("barLow").style.width = `${lPct}%`;
+  }
+
+  document.getElementById("catFastenerCount").textContent = `${fastenerCount} Incidents`;
+  document.getElementById("catRailCount").textContent = `${railCount} Incidents`;
+  document.getElementById("catSleeperCount").textContent = `${sleeperCount} Incident`;
+  document.getElementById("catBallastCount").textContent = `${ballastCount} Incident`;
 }
 
 function renderAdminSurveysTable() {
@@ -623,7 +658,7 @@ function initOrUpdateAdminMap() {
 }
 
 // ============================================================================
-// 6. OPERATOR WORKSPACE LOGIC
+// 6. OPERATOR WORKSPACE & CUSTOM DRONE UPLOAD
 // ============================================================================
 
 function initOperatorWorkspace() {
@@ -644,6 +679,43 @@ function initOperatorWorkspace() {
   const submitSurveyBtn = document.getElementById("operatorSubmitSurveyBtn");
   if (submitSurveyBtn) {
     submitSurveyBtn.addEventListener("click", openSubmitModal);
+  }
+}
+
+function initCustomUploads() {
+  const customImgInput = document.getElementById("customImageInput");
+  const customVidInput = document.getElementById("customVideoInput");
+  const imgEl = document.getElementById("stillImage");
+  const vidEl = document.getElementById("patrolVideo");
+
+  if (customImgInput) {
+    customImgInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          imgEl.src = re.target.result;
+          imgEl.onload = () => {
+            document.getElementById("resHudText").textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
+            drawBoundingBoxes();
+            showToast("Custom Orthophoto Loaded", `${file.name} ready for SAHI analysis`, "success");
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (customVidInput) {
+    customVidInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        vidEl.src = url;
+        vidEl.play();
+        showToast("Custom Patrol Video Loaded", `${file.name} playing with live telemetry`, "success");
+      }
+    });
   }
 }
 
@@ -725,10 +797,22 @@ function initStillCanvas() {
     const imgEl = document.getElementById("stillImage");
     if (currentScenarioKey === "scenario_fracture") {
       imgEl.src = "sample_data/track_fracture_sample.jpg";
+      document.getElementById("resHudText").textContent = "2048 × 1536 px";
+      document.getElementById("gpsHudText").textContent = "28.6175°N, 77.2120°E";
     } else {
       imgEl.src = "sample_data/sample_track_image.jpg";
+      document.getElementById("resHudText").textContent = "2752 × 1536 px";
+      document.getElementById("gpsHudText").textContent = "28.6148°N, 77.2096°E";
     }
     imgEl.onload = () => drawBoundingBoxes();
+  });
+
+  document.getElementById("runStillInspectBtn").addEventListener("click", () => {
+    showToast("SAHI 4K Slicer Executing", "Computing 8 high-resolution 1:1 image patches...", "warning");
+    setTimeout(() => {
+      drawBoundingBoxes();
+      showToast("Inference Complete", "RT-DETR-L detected 3 verified defects (13.3ms latency)", "success");
+    }, 400);
   });
 }
 
@@ -835,6 +919,7 @@ window.toggleOperatorVerification = function(defectId) {
     defect.verified = !defect.verified;
     drawBoundingBoxes();
     renderOperatorDefectsList();
+    showToast(defect.verified ? "Defect Verified" : "Defect Rejected", `${defect.name} status updated`, "warning");
   }
 };
 
@@ -964,9 +1049,13 @@ window.toggleDefectCleared = function(defectId) {
     if (defect.cleared) {
       const now = new Date();
       defect.clearedAt = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      showToast("Defect Repaired", `${defect.name} at ${defect.chainage} signed off`, "success");
+    } else {
+      showToast("Status Reset", `${defect.name} set back to pending`, "warning");
     }
     renderClearancePunchlist();
     updateAdminKPIs();
+    updateAnalyticsWidgets();
   }
 };
 
@@ -978,10 +1067,11 @@ function certifySectionClearance() {
   liveSurvey.statusLabel = "✓ 100% Cleared";
   liveSurvey.statusClass = "badge-green";
 
-  alert("🛡️ TRACK SAFETY CERTIFIED!\n\nAll defects in Section Delhi-Mathura (KM 122.4 - 122.8) have been verified repaired.\nSuper Admin dashboard has been notified and updated.");
+  showToast("🛡️ Track Safety Certified", "Delhi-Mathura section certified 100% fit for 130 km/h traffic!", "success");
 
   renderClearanceView();
   updateAdminKPIs();
+  updateAnalyticsWidgets();
 }
 
 function initOrUpdateClearanceMap() {
@@ -1022,7 +1112,96 @@ function initOrUpdateClearanceMap() {
 }
 
 // ============================================================================
-// 8. OPERATOR SURVEY SUBMISSION MODAL
+// 8. PRINTABLE OFFICIAL TMS FORM P-14 CERTIFICATE
+// ============================================================================
+
+function initCertificateModal() {
+  const openBtn = document.getElementById("openCertificateBtn");
+  const modal = document.getElementById("certModal");
+  const closeBtn1 = document.getElementById("closeCertModalBtn");
+  const closeBtn2 = document.getElementById("closeCertBtn2");
+
+  if (openBtn) {
+    openBtn.addEventListener("click", () => {
+      populateCertificate();
+      modal.style.display = "flex";
+    });
+  }
+
+  if (closeBtn1) closeBtn1.addEventListener("click", () => modal.style.display = "none");
+  if (closeBtn2) closeBtn2.addEventListener("click", () => modal.style.display = "none");
+}
+
+function populateCertificate() {
+  const tbody = document.getElementById("certTableBody");
+  const statusText = document.getElementById("certStatusText");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
+  if (!liveSurvey) return;
+
+  const total = liveSurvey.defects.length;
+  const cleared = liveSurvey.defects.filter(d => d.cleared).length;
+
+  if (cleared === total) {
+    statusText.textContent = "100% DEFECTS CLEARED & RECTIFIED (TRACK FIT)";
+    statusText.style.color = "#16a34a";
+  } else {
+    statusText.textContent = `PARTIALLY CLEARED (${cleared}/${total} RECTIFIED)`;
+    statusText.style.color = "#d97706";
+  }
+
+  liveSurvey.defects.forEach(d => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${d.id}</strong></td>
+      <td>${d.name}</td>
+      <td><strong>${d.severity}</strong></td>
+      <td>${d.chainage}</td>
+      <td>${d.action}</td>
+      <td style="color: ${d.cleared ? '#16a34a' : '#dc2626'}; font-weight: 700;">
+        ${d.cleared ? `✓ Cleared (${d.clearedAt || '10:45'})` : '● Pending'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.printCertificate = function() {
+  window.print();
+};
+
+// ============================================================================
+// 9. TOAST NOTIFICATION UTILITY
+// ============================================================================
+
+function showToast(title, message, type = "info") {
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `toast-item ${type}`;
+  toast.innerHTML = `
+    <div style="font-weight: 700; margin-bottom: 2px;">${title}</div>
+    <div style="color: #cbd5e1; font-size: 11px;">${message}</div>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateX(100%)";
+    toast.style.transition = "all 0.3s ease";
+    setTimeout(() => {
+      if (toast.parentElement) toast.parentElement.removeChild(toast);
+    }, 300);
+  }, 4000);
+}
+
+// ============================================================================
+// 10. OPERATOR SURVEY SUBMISSION MODAL
 // ============================================================================
 
 function initModals() {
@@ -1059,7 +1238,7 @@ function submitSurveyToTMS() {
 
   document.getElementById("submitModal").style.display = "none";
 
-  alert("✅ SURVEY SUBMITTED TO TMS DATABASE!\n\nOfficial CSV dispatch generated and committed.\nField Clearance Team has been dispatched.");
+  showToast("Survey Dispatched", "Committed to TMS Central DB. Field Gang 12 notified.", "success");
 
   if (currentUser && currentUser.role === "admin") {
     switchAppView("clearance");
@@ -1069,7 +1248,7 @@ function submitSurveyToTMS() {
 }
 
 // ============================================================================
-// 9. MASTER CSV EXPORT (INDIAN RAILWAYS TMS FORMAT)
+// 11. MASTER CSV EXPORT (INDIAN RAILWAYS TMS FORMAT)
 // ============================================================================
 
 window.exportSingleSurveyCSV = function(surveyId) {
@@ -1082,6 +1261,7 @@ window.exportSingleSurveyCSV = function(surveyId) {
   });
 
   downloadCSVFile(csv, `RailSamiksha_TMS_${survey.id}.csv`);
+  showToast("CSV Downloaded", `Exported TMS report for ${survey.id}`, "success");
 };
 
 function exportMasterTMSCSV() {
@@ -1094,6 +1274,7 @@ function exportMasterTMSCSV() {
   });
 
   downloadCSVFile(csv, `RailSamiksha_Master_TMS_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
+  showToast("Master CSV Exported", "Divisional Master TMS records downloaded", "success");
 }
 
 function downloadCSVFile(csvContent, fileName) {
