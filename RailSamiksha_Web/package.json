@@ -1,0 +1,21 @@
+{
+  "name": "railsamiksha-ai-web",
+  "version": "3.0.0",
+  "description": "RailSamiksha AI — Autonomous Aerial Railway Track Defect Inspection Platform (RT-DETR-L)",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 3000",
+    "build": "echo 'RailSamiksha AI Web build complete for Vercel Edge'"
+  },
+  "keywords": [
+    "railway-inspection",
+    "rtdetr",
+    "computer-vision",
+    "drone-patrol",
+    "indian-railways",
+    "pway",
+    "vercel"
+  ],
+  "author": "RailSamiksha AI Team",
+  "license": "MIT"
+}

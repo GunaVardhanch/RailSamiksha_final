@@ -27,6 +27,7 @@
    - [6.4 Train / Valid / Test Split Isolation Strategy](#64-train--valid--test-split-isolation-strategy)
 7. [Repository Structure & File Sitemap](#7-repository-structure--file-sitemap)
 8. [Production Operational Playbook (Commands & Workflows)](#8-production-operational-playbook-commands--workflows)
+9. [Vercel Web Edge Deployment & Model Registry](#9-vercel-web-edge-deployment--model-registry)
 
 ---
 
@@ -305,6 +306,33 @@ When Dataset v2.0 is assembled:
 ```bash
 .venv\Scripts\python.exe export_engine.py --weights models/rtdetr_consolidated_run_best.pt --format onnx --half
 ```
+
+---
+
+## 9. Vercel Web Edge Deployment & Model Registry
+
+RailSamiksha provides a dedicated, lightweight, zero-dependency web frontend located in [`RailSamiksha_Web/`](file:///c:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/RailSamiksha_Web). It allows instant deployment to **Vercel Edge Global CDN** without bundling multi-gigabyte training caches.
+
+### 9.1 Model Checkpoint Archive (`release_weights/`)
+All trained models are cataloged with PyTorch `.pt` and ONNX `.onnx` weights under 100 MB:
+* **v3 Sanitized (Latest)**: [`release_weights/rtdetr_v3_sanitized_85_best.pt`](file:///c:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/release_weights/rtdetr_v3_sanitized_85_best.pt) — 97.3% box noise eliminated, 0.5% anomaly rate, 55.3% sleeper precision.
+* **v2 Canonical-85**: [`release_weights/rtdetr_v3_canonical_85_best.pt`](file:///c:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/release_weights/rtdetr_v3_canonical_85_best.pt) (50.74% $mAP_{50}$) & [`release_weights/rtdetr_v3_canonical_85_best.onnx`](file:///c:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/release_weights/rtdetr_v3_canonical_85_best.onnx).
+* **v1 Baseline Production**: [`release_weights/rtdetr_v3_baseline_53_best.pt`](file:///c:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/release_weights/rtdetr_v3_baseline_53_best.pt) (53.75% $mAP_{50}$).
+
+### 9.2 Steps to Push to GitHub & Deploy to Vercel
+1. Rename branch to `main`:
+   ```bash
+   git branch -M main
+   ```
+2. Connect your GitHub remote repository:
+   ```bash
+   git remote add origin https://github.com/<your-username>/RailSamiksha-AeroInspect.git
+   git push -u origin main
+   ```
+3. In [Vercel Dashboard](https://vercel.com/new):
+   * Select your GitHub repository.
+   * Under **Root Directory**, set: `RailSamiksha_Web`.
+   * Click **Deploy**. Your inspection platform will be live on a global `.vercel.app` URL.
 
 ---
 *Authored by the RailSamiksha AI Research & Drone Engineering Team.*  

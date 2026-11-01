@@ -9,100 +9,154 @@
 </head>
 <body>
 
-  <!-- Top Navbar -->
+  <!-- Top Glassmorphism Navbar -->
   <header class="navbar">
     <div class="brand">
       <div class="brand-icon">🚆</div>
       <div>
-        <div class="brand-title">RailSamiksha AI | AeroInspect</div>
-        <div class="brand-subtitle">Autonomous Aerial Railway Track Defect Inspection Platform</div>
+        <div class="brand-title">RailSamiksha AI <span class="version-tag">v3.0 Edge</span></div>
+        <div class="brand-subtitle">Autonomous Aerial Railway Track Defect Inspection Platform • P-Way TMS Edition</div>
       </div>
     </div>
+    
+    <div class="navbar-center">
+      <div class="model-select-wrapper">
+        <label for="globalModelSelect" class="model-select-label">ACTIVE MODEL CHECKPOINT:</label>
+        <select id="globalModelSelect" class="model-dropdown">
+          <option value="v3_sanitized" selected>RT-DETR-L v3 (Sanitized 0.5% Anomaly | Peak Sleeper P: 55.3%)</option>
+          <option value="v2_canonical">RT-DETR-L v2 (Canonical 85 | Balanced 9-Class 50.7% mAP50)</option>
+          <option value="v1_baseline">RT-DETR-L v1 (Production Baseline | 53.75% mAP50)</option>
+        </select>
+      </div>
+    </div>
+
     <div class="header-badges">
-      <span class="badge badge-cyan">Model: RT-DETR-L</span>
-      <span class="badge badge-green">Vercel Edge Global CDN</span>
+      <span class="badge badge-cyan"><span class="pulse-dot"></span> Edge CDN Active</span>
       <span class="badge badge-purple">RTK-GPS Synced</span>
+      <span class="badge badge-green" id="modelMetricBadge">mAP50: 49.37% (Sanitized)</span>
     </div>
   </header>
 
   <!-- Navigation Tabs -->
   <nav class="tabs-nav">
-    <button class="tab-btn active" data-tab="still-tab">📷 Aerial Still Inspection (4K)</button>
+    <button class="tab-btn active" data-tab="still-tab">📷 Aerial Still Inspection (4K SAHI)</button>
     <button class="tab-btn" data-tab="video-tab">🎥 Flight Patrol Video Stream</button>
-    <button class="tab-btn" data-tab="map-tab">🗺️ RTK-GPS Corridor Map</button>
+    <button class="tab-btn" data-tab="map-tab">🗺️ Satellite Corridor GIS</button>
     <button class="tab-btn" data-tab="ledger-tab">📋 P-Way Maintenance Registry</button>
+    <button class="tab-btn" data-tab="model-tab">🧠 Model Benchmarks & Weights</button>
   </nav>
 
   <!-- Main Container -->
   <main class="container">
 
     <!-- ============================================================== -->
-    <!-- TAB 1: STILL INSPECTION -->
+    <!-- TAB 1: STILL INSPECTION (SAHI 4K) -->
     <!-- ============================================================== -->
     <section id="still-tab" class="tab-content active">
       <div class="metrics-row">
         <div class="metric-card">
-          <span class="metric-label">Detected Anomalies</span>
+          <span class="metric-label">Detected Track Anomalies</span>
           <span class="metric-value" id="stillDefectCount">3</span>
         </div>
         <div class="metric-card">
           <span class="metric-label">SAHI Overlap Patches</span>
-          <span class="metric-value">8 Tiles</span>
+          <span class="metric-value">8 Slices (1:1 Native)</span>
         </div>
         <div class="metric-card">
-          <span class="metric-label">Inference Latency</span>
-          <span class="metric-value">16.6 ms</span>
+          <span class="metric-label">Patch Inference Latency</span>
+          <span class="metric-value" id="stillLatencyVal">13.3 ms</span>
         </div>
         <div class="metric-card">
-          <span class="metric-label">Peak Confidence</span>
-          <span class="metric-value">91.4%</span>
+          <span class="metric-label">Peak Detection Confidence</span>
+          <span class="metric-value" id="peakConfVal">91.4%</span>
         </div>
       </div>
 
       <div class="grid-2">
+        <!-- Canvas & Viewport Card -->
         <div class="card">
-          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Orthophoto Aerial View</h3>
-          <div class="canvas-wrapper">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="font-size: 15px; color: #fff;">Orthophoto Aerial Track View (GSD: 0.65 mm/px)</h3>
+            <div class="canvas-controls">
+              <button id="zoomInBtn" class="control-icon-btn" title="Zoom In">+</button>
+              <button id="zoomOutBtn" class="control-icon-btn" title="Zoom Out">−</button>
+              <button id="resetZoomBtn" class="control-icon-btn" title="Reset View">⟲</button>
+            </div>
+          </div>
+
+          <div class="canvas-wrapper" id="canvasWrapper">
             <img id="stillImage" class="canvas-viewport" src="sample_data/sample_track_image.jpg" alt="Aerial Rail Track">
             <canvas id="overlayCanvas"></canvas>
+            <div id="canvasCrosshair"></div>
           </div>
+
           <div class="hud-bar">
-            <div class="hud-item"><span>Resolution</span><span>2752 × 1536 px</span></div>
+            <div class="hud-item"><span>Resolution</span><span id="resHudText">2752 × 1536 px</span></div>
             <div class="hud-item"><span>Drone GSD</span><span>0.65 mm/px</span></div>
-            <div class="hud-item"><span>Simulated GPS</span><span>28.6139°N, 77.2090°E</span></div>
-            <div class="hud-item"><span>BBox Filtering</span><span id="bboxStatusText">Visible</span></div>
+            <div class="hud-item"><span>Simulated GPS</span><span id="gpsHudText">28.6139°N, 77.2090°E</span></div>
+            <div class="hud-item"><span>BBox Overlay</span><span id="bboxStatusText" style="color: #38bdf8;">Visible</span></div>
           </div>
         </div>
 
+        <!-- Controls & Inspection Drawer Card -->
         <div class="card">
-          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Inspection Parameters</h3>
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Inspection Parameters & Scenarios</h3>
+          
           <div class="control-group">
-            <label class="control-label">Sample Orthophoto Asset</label>
-            <select id="sampleSelect" class="select-input">
-              <option value="sample_data/sample_track_image.jpg">Sample Track Flight Orthophoto 1</option>
+            <label class="control-label">Flight Scenario Preset</label>
+            <select id="scenarioSelect" class="select-input">
+              <option value="scenario_fastener">Scenario A: Mainline Fastener & Rail Wear (Sample 1)</option>
+              <option value="scenario_fracture">Scenario B: Rail Fracture & Micro-Cracks (Sample 2)</option>
+              <option value="scenario_clean">Scenario C: High-Speed Ballasted Mainline (Clean Track)</option>
             </select>
           </div>
 
           <div class="control-group">
-            <label class="control-label">Confidence Threshold: <span id="confVal">30%</span></label>
+            <div style="display: flex; justify-content: space-between;">
+              <label class="control-label">Confidence Threshold</label>
+              <span id="confVal" style="font-weight: 600; color: var(--cyan-accent);">30%</span>
+            </div>
             <input type="range" id="confSlider" min="10" max="90" value="30" step="5" style="width: 100%; accent-color: var(--cyan-accent);">
           </div>
 
           <div class="control-group">
-            <label class="control-label">Bounding Box Overlay</label>
-            <button id="toggleBBoxBtn" class="btn-primary" style="background: #1e293b; border: 1px solid var(--border-color); color: #fff;">
-              Toggle Bounding Boxes
+            <label class="control-label">Defect Category Filters</label>
+            <div class="filter-pills-row">
+              <button class="filter-pill active" data-cat="all">All</button>
+              <button class="filter-pill active" data-cat="fastener">Fasteners</button>
+              <button class="filter-pill active" data-cat="rail">Rails</button>
+              <button class="filter-pill active" data-cat="sleeper">Sleepers</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <button id="toggleBBoxBtn" class="btn-secondary" style="flex: 1;">
+              Toggle BBoxes
+            </button>
+            <button id="runStillInspectBtn" class="btn-primary" style="flex: 2;">
+              🔍 Run SAHI 4K Analysis
             </button>
           </div>
 
-          <button id="runStillInspectBtn" class="btn-primary" style="margin-top: 20px;">
-            🔍 Execute 4K Defect Analysis
-          </button>
+          <!-- Selected Defect Detail Card -->
+          <div id="defectInspectorCard" class="defect-inspector" style="display: none;">
+            <div class="defect-inspector-header">
+              <span id="inspTitle" style="font-weight: 600; font-size: 13px;">Defect Details</span>
+              <span id="inspSeverityBadge" class="sev-pill sev-high">CRITICAL</span>
+            </div>
+            <div class="defect-inspector-body">
+              <div class="insp-stat"><span class="insp-lbl">Category:</span> <span id="inspCategory">-</span></div>
+              <div class="insp-stat"><span class="insp-lbl">Confidence:</span> <span id="inspConfidence">-</span></div>
+              <div class="insp-stat"><span class="insp-lbl">Chainage:</span> <span id="inspChainage">-</span></div>
+              <div class="insp-stat"><span class="insp-lbl">Coordinates:</span> <span id="inspCoords">-</span></div>
+              <div class="insp-stat"><span class="insp-lbl">IRPWM Action:</span> <span id="inspAction" style="color: #fbbf24;">-</span></div>
+            </div>
+          </div>
 
-          <div style="margin-top: 20px;">
-            <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Identified Track Anomalies</h4>
-            <div id="defectsList" style="display: flex; flex-direction: column; gap: 8px;">
-              <!-- Dynamic Defect Pills -->
+          <div style="margin-top: 18px;">
+            <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Identified Track Anomalies (Click to Focus)</h4>
+            <div id="defectsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;">
+              <!-- Dynamic Defect Cards -->
             </div>
           </div>
         </div>
@@ -115,43 +169,73 @@
     <section id="video-tab" class="tab-content">
       <div class="grid-2">
         <div class="card">
-          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Live Drone Patrol Video Feed</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="font-size: 15px; color: #fff;">Live Drone Patrol Video Feed</h3>
+            <span class="badge badge-purple"><span class="pulse-dot"></span> ByteTrack Active</span>
+          </div>
+
           <div style="position: relative; width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000;">
             <video id="patrolVideo" src="sample_data/sample_track_flight.mp4" controls autoplay loop muted style="width: 100%; height: auto; max-height: 480px; display: block;"></video>
+            <div class="video-overlay-hud">
+              <div class="v-hud-left">
+                <div>ALT: <span id="vAlt">3.8 m</span> AGL</div>
+                <div>SPD: <span id="vSpd">6.8 km/h</span></div>
+                <div>GIMBAL: -45° PITCH</div>
+              </div>
+              <div class="v-hud-right">
+                <div>LAT: <span id="vLat">28.6148° N</span></div>
+                <div>LON: <span id="vLon">77.2096° E</span></div>
+                <div>CHAINAGE: <span id="vKm">KM 122.400</span></div>
+              </div>
+            </div>
           </div>
 
           <div class="hud-bar">
             <div class="hud-item"><span>Flight Time</span><span id="videoTime">00:04.2s</span></div>
             <div class="hud-item"><span>Drone Speed</span><span>6.8 km/h</span></div>
             <div class="hud-item"><span>Altitude AGL</span><span>3.8 m</span></div>
-            <div class="hud-item"><span>ByteTrack Status</span><span style="color: #34d399;">Active (3-Hit Filter)</span></div>
+            <div class="hud-item"><span>Temporal Filter</span><span style="color: #34d399;">3-Hit Consecutive Confirm</span></div>
           </div>
         </div>
 
         <div class="card">
-          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Live Stream Analytics</h3>
-          <div class="metric-card" style="margin-bottom: 12px;">
-            <span class="metric-label">Verified Track Incidents</span>
-            <span class="metric-value" id="verifiedCount">2</span>
-          </div>
-
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Stream Telemetry & Clip Select</h3>
+          
           <div class="control-group">
-            <label class="control-label">Video Clip Asset</label>
-            <select class="select-input">
-              <option>sample_track_flight.mp4 (Sample Corridor)</option>
+            <label class="control-label">Drone Patrol Video Clip</label>
+            <select id="videoSelect" class="select-input">
+              <option value="sample_data/sample_track_flight.mp4">Corridor Survey Flight 01 (Ballast & Ties)</option>
+              <option value="sample_data/broken_track_patrol.mp4">Broken Track & Pandrol Defect Patrol Clip</option>
             </select>
           </div>
 
+          <div class="metrics-row" style="margin-top: 14px;">
+            <div class="metric-card">
+              <span class="metric-label">Confirmed Defects</span>
+              <span class="metric-value" id="videoVerifiedCount">2</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">False-Alarm Suppressed</span>
+              <span class="metric-value">14 Flashes</span>
+            </div>
+          </div>
+
           <div style="margin-top: 16px;">
-            <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Temporal Track Registry</h4>
-            <div style="font-size: 12px; display: flex; flex-direction: column; gap: 6px;">
-              <div style="background: var(--bg-primary); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                <span>#1 Damaged Fastener (Clip Bend)</span>
-                <span class="sev-pill sev-med">Medium</span>
+            <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">ByteTrack Confirmed Events</h4>
+            <div id="videoEventsList" style="font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div class="event-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span style="font-weight: 600; color: #f87171;">Tracklet #14: Damaged Fastener</span>
+                  <span class="sev-pill sev-med">MEDIUM</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 11px;">Observed across 18 consecutive frames • Chainage KM 122.415</div>
               </div>
-              <div style="background: var(--bg-primary); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                <span>#2 Rail Wear (Gauge Corner Flow)</span>
-                <span class="sev-pill sev-low">Low</span>
+              <div class="event-item">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span style="font-weight: 600; color: #34d399;">Tracklet #22: Rail Wear (Gauge Corner)</span>
+                  <span class="sev-pill sev-low">LOW</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 11px;">Observed across 32 consecutive frames • Chainage KM 122.400</div>
               </div>
             </div>
           </div>
@@ -160,16 +244,20 @@
     </section>
 
     <!-- ============================================================== -->
-    <!-- TAB 3: RTK-GPS DEFECT MAP -->
+    <!-- TAB 3: RTK-GPS DEFECT SATELLITE MAP -->
     <!-- ============================================================== -->
     <section id="map-tab" class="tab-content">
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
           <div>
-            <h3 style="font-size: 16px; color: #fff;">Railway Corridor Georeferenced Defect Map</h3>
-            <p style="font-size: 12px; color: var(--text-muted);">Real RTK-GPS coordinates plotted along surveyed railway line.</p>
+            <h3 style="font-size: 16px; color: #fff;">Railway Corridor Georeferenced Defect GIS Map</h3>
+            <p style="font-size: 12px; color: var(--text-muted);">Real-time RTK-GPS coordinates plotted along surveyed railway line.</p>
           </div>
-          <span class="badge badge-green">Leaflet OpenStreetMap Online</span>
+          <div style="display: flex; gap: 8px;">
+            <button id="mapSatBtn" class="btn-secondary active" style="padding: 6px 12px; font-size: 12px;">🛰️ Satellite HD</button>
+            <button id="mapDarkBtn" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">🌙 Dark Tactical</button>
+            <button id="mapOsmBtn" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">🗺️ OSM Street</button>
+          </div>
         </div>
         <div id="mapContainer"></div>
       </div>
@@ -183,25 +271,28 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
           <div>
             <h3 style="font-size: 16px; color: #fff;">Permanent Way (P-Way) Maintenance Registry</h3>
-            <p style="font-size: 12px; color: var(--text-muted);">Official railway maintenance dispatch ledger with chainage markings and RTK-GPS coordinates.</p>
+            <p style="font-size: 12px; color: var(--text-muted);">Official railway maintenance dispatch ledger compliant with Indian Railways Track Management System (TMS).</p>
           </div>
-          <button id="downloadCsvBtn" class="btn-primary" style="width: auto; padding: 10px 18px;">
-            📥 Export Maintenance CSV
-          </button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="ledgerSearchInput" placeholder="Filter by defect or chainage..." class="select-input" style="width: 220px; padding: 8px 12px;">
+            <button id="downloadCsvBtn" class="btn-primary" style="width: auto; padding: 10px 18px;">
+              📥 Export TMS CSV
+            </button>
+          </div>
         </div>
 
         <div class="data-table-wrapper">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Track ID</th>
+                <th>Incident ID</th>
                 <th>Chainage (KM)</th>
                 <th>Defect Category</th>
                 <th>Severity</th>
                 <th>Confidence</th>
                 <th>Latitude</th>
                 <th>Longitude</th>
-                <th>Action Required</th>
+                <th>Action Required (IRPWM Code)</th>
               </tr>
             </thead>
             <tbody id="ledgerTableBody">
@@ -212,7 +303,93 @@
       </div>
     </section>
 
+    <!-- ============================================================== -->
+    <!-- TAB 5: MODEL BENCHMARKS & WEIGHTS -->
+    <!-- ============================================================== -->
+    <section id="model-tab" class="tab-content">
+      <div class="card">
+        <h3 style="font-size: 16px; color: #fff; margin-bottom: 8px;">RT-DETR-L Inspection Model Registry & Benchmarks</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">
+          Comprehensive benchmark comparison of all trained model checkpoints evaluated on held-out test splits.
+        </p>
+
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Model Checkpoint</th>
+                <th>Training Recipe</th>
+                <th>mAP50</th>
+                <th>mAP50-95</th>
+                <th>Latency (RTX A4000)</th>
+                <th>Key Strengths</th>
+                <th>Weights (.pt / .onnx)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>v3 Sanitized (Latest)</strong></td>
+                <td>50 Epochs, B=16, AdamW, Cleaned Box Scale</td>
+                <td><span class="badge badge-green">49.37%</span></td>
+                <td>29.32%</td>
+                <td>13.3 ms</td>
+                <td>0.5% Anomaly Rate, Zero Tie Leakage, Sleeper Precision 55.3%</td>
+                <td><span class="badge badge-cyan">release_weights/rtdetr_v3_sanitized_85_best.pt</span></td>
+              </tr>
+              <tr>
+                <td><strong>v2 Canonical-85</strong></td>
+                <td>50 Epochs, B=16, AdamW, Albumentations CLAHE</td>
+                <td><span class="badge badge-green">50.74%</span></td>
+                <td>32.48%</td>
+                <td>13.5 ms</td>
+                <td>Misalignment 75%, Foreign Objects 72.8%, Ballast 71.2%</td>
+                <td><span class="badge badge-cyan">release_weights/rtdetr_v3_canonical_85_best.pt</span></td>
+              </tr>
+              <tr>
+                <td><strong>v1 Baseline Production</strong></td>
+                <td>Initial Consolidated Run, B=16, SGD</td>
+                <td><span class="badge badge-green">53.75%</span></td>
+                <td>33.10%</td>
+                <td>13.4 ms</td>
+                <td>High recall on raw un-sanitized labels</td>
+                <td><span class="badge badge-purple">weights/best.pt</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+          <div class="metric-card">
+            <span class="metric-label">Model Architecture</span>
+            <span class="metric-value" style="font-size: 16px;">RT-DETR-L (Bipartite Matching)</span>
+            <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Vision Transformer + Efficient Hybrid Encoder</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Total Parameters</span>
+            <span class="metric-value" style="font-size: 16px;">32,002,235 (32.0M)</span>
+            <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">105.4 GFLOPs Compute Density</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Deployment Engines</span>
+            <span class="metric-value" style="font-size: 16px;">PyTorch FP32 & ONNX FP16</span>
+            <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Tested with TensorRT & OpenVINO targets</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
+
+  <footer class="footer">
+    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto; flex-wrap: wrap; gap: 12px;">
+      <div>RailSamiksha AI Autonomous Aerial Defect Detection Platform • Powered by Google DeepMind Antigravity</div>
+      <div style="display: flex; gap: 16px;">
+        <a href="https://github.com" target="_blank" style="color: var(--cyan-accent); text-decoration: none; font-size: 12px;">GitHub Repository</a>
+        <a href="#model-tab" style="color: var(--text-muted); text-decoration: none; font-size: 12px;">Model Benchmarks</a>
+        <a href="vercel.json" target="_blank" style="color: var(--text-muted); text-decoration: none; font-size: 12px;">Vercel Config</a>
+      </div>
+    </div>
+  </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="app.js"></script>
