@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RailSamiksha AI | Enterprise RBAC Aerial Track Inspection Platform</title>
+  <title>RailSamiksha AI | Executive Track Inspection Platform</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#06b6d4">
+  <meta name="theme-color" content="#111827">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
@@ -19,7 +19,7 @@
       <div class="auth-header">
         <div class="auth-logo">🚆</div>
         <h1 class="auth-title">RailSamiksha AI</h1>
-        <p class="auth-subtitle">Autonomous Aerial Track Inspection Platform • Indian Railways TMS</p>
+        <p class="auth-subtitle">Autonomous Aerial Track Inspection • Indian Railways TMS</p>
       </div>
 
       <!-- Auth Tabs: Sign In vs Create Account -->
@@ -45,18 +45,18 @@
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-size: 11px; color: var(--text-muted);">
           <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-            <input type="checkbox" id="rememberMe" checked style="accent-color: var(--cyan-accent);"> Remember this workstation
+            <input type="checkbox" id="rememberMe" checked style="accent-color: var(--pill-dark);"> Remember this workstation
           </label>
-          <span style="color: var(--cyan-accent);">Default Pass: admin123</span>
+          <span style="color: var(--text-dark); font-weight: 600;">Pass: admin123</span>
         </div>
 
-        <button type="submit" class="btn-primary auth-submit-btn">
-          🔐 Authenticate & Enter Portal
+        <button type="submit" class="auth-submit-btn">
+          Sign In to Dashboard
         </button>
 
         <!-- Quick 1-Click Demo Logins -->
         <div class="demo-logins-box">
-          <div class="demo-logins-title">⚡ ONE-CLICK DEMO LOGIN (SELECT ROLE):</div>
+          <div class="demo-logins-title">⚡ ONE-CLICK DEMO ACCESS (SELECT ROLE):</div>
           <div class="demo-btns-grid">
             <button type="button" class="demo-login-btn" onclick="quickLogin('admin')">
               👑 <strong>Super Admin</strong>
@@ -120,648 +120,366 @@
           </div>
         </div>
 
-        <button type="submit" class="btn-primary auth-submit-btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-          ✅ Register Account & Enter
+        <button type="submit" class="auth-submit-btn">
+          Create Account & Sign In
         </button>
       </form>
 
       <div class="auth-footer">
-        <span>Protected under Indian Railways Information Security Guidelines • Antigravity AI Engine</span>
+        <span>Protected under Indian Railways Information Security Guidelines</span>
       </div>
     </div>
   </div>
 
   <!-- ============================================================== -->
-  <!-- 2. MAIN APPLICATION (AUTHENTICATED VIEW) -->
+  <!-- 2. MAIN APPLICATION SURFACE (INSPIRED BY THE EXECUTIVE DESIGN)  -->
   <!-- ============================================================== -->
-  <div id="appScreen" style="display: none; min-height: 100vh; flex-direction: column;">
+  <div id="appScreen" class="dashboard-container" style="display: none;">
 
-    <!-- Top Glassmorphism Navbar -->
-    <header class="navbar">
-      <div class="brand">
-        <div class="brand-icon">🚆</div>
-        <div>
-          <div class="brand-title">RailSamiksha AI <span class="version-tag">Enterprise Scale</span></div>
-          <div class="brand-subtitle">Autonomous Aerial Railway Track Defect Inspection • Indian Railways TMS</div>
-        </div>
+    <!-- Minimalist Left Sidebar Icon Rail -->
+    <aside class="sidebar-rail">
+      <div class="sidebar-logo">🚆</div>
+      <div class="sidebar-nav">
+        <button class="rail-btn active" data-rail-tab="dash" title="Executive Dashboard">🏠</button>
+        <button class="rail-btn" data-rail-tab="sahi" title="4K SAHI Inspection">📷</button>
+        <button class="rail-btn" data-rail-tab="video" title="Flight Video Patrol">🎥</button>
+        <button class="rail-btn" data-rail-tab="map" title="Corridor Satellite GIS">🗺️</button>
+        <button class="rail-btn" data-rail-tab="clearance" title="P-Way Defect Clearance">🔧</button>
+        <button class="rail-btn" data-rail-tab="ledger" title="TMS Master Ledger">📋</button>
+        <button class="rail-btn" data-rail-tab="models" title="AI Model Benchmarks">🧠</button>
       </div>
-      
-      <!-- Super Admin View Switcher (Visible only to Admin) -->
-      <div class="role-switcher-container" id="adminAuditSwitcher" style="display: none;">
-        <span class="role-switcher-label">ADMIN AUDIT VIEW:</span>
-        <div class="role-btn-group">
-          <button class="role-btn active" data-role="admin">👑 Super Admin</button>
-          <button class="role-btn" data-role="operator">🎮 Drone Operator</button>
-          <button class="role-btn" data-role="clearance">
-            🔧 Field Gang
-            <span class="badge-counter" id="clearanceAlertBadge">1</span>
+      <div class="sidebar-bottom">
+        <button class="rail-btn" id="railCertBtn" title="TMS Safety Certificate">📜</button>
+        <button class="rail-btn" id="signOutBtn" title="Sign Out">🚪</button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="dashboard-content">
+
+      <!-- Top Navigation Bar -->
+      <header class="top-navbar">
+        <div class="nav-title-group">
+          <h1 class="nav-page-title" id="topNavTitle">Dashboard</h1>
+        </div>
+
+        <!-- Search Bar with Pill Styling -->
+        <div class="nav-search-bar">
+          <span style="font-size: 13px; color: var(--text-dim);">🔍</span>
+          <input type="text" class="nav-search-input" id="globalSearchInput" placeholder="Search request...">
+        </div>
+
+        <!-- Role Switcher Segmented Pills -->
+        <div class="role-pills-switcher" id="rolePillsSwitcher">
+          <button class="role-pill-btn active" data-role="admin">👑 Super Admin</button>
+          <button class="role-pill-btn" data-role="operator">🎮 Drone Pilot</button>
+          <button class="role-pill-btn" data-role="clearance">🔧 Field Gang</button>
+        </div>
+
+        <!-- Action Buttons & User Profile -->
+        <div class="nav-actions-group">
+          <button class="circle-action-btn" id="settingsActionBtn" title="System Settings">⚙️</button>
+          <button class="circle-action-btn" id="bellActionBtn" title="Active Alerts">
+            🔔
+            <span class="circle-badge-dot" id="bellDot"></span>
           </button>
-        </div>
-      </div>
-
-      <!-- Authenticated User Profile Chip & Sign Out -->
-      <div class="user-profile-header">
-        <div class="user-chip">
-          <div class="user-avatar" id="userAvatar">👑</div>
-          <div class="user-info">
-            <span class="user-name" id="userNameDisplay">Er. Rajesh Singhania</span>
-            <span class="user-role-badge" id="userRoleBadge">Super Admin</span>
+          <button class="btn-dark-pill" id="topActionBtn">
+            Upgrade plan
+          </button>
+          <div class="user-profile-widget" id="userProfileWidget">
+            <div class="user-avatar-circle" id="userAvatar">👑</div>
+            <div class="user-meta-text">
+              <span class="user-name-text" id="userNameDisplay">Er. Rajesh Singhania</span>
+              <span class="user-role-text" id="userRoleBadge">Super Admin (HQ)</span>
+            </div>
+            <span style="font-size: 10px; color: var(--text-dim); margin-left: 2px;">▼</span>
           </div>
         </div>
-        <button id="signOutBtn" class="sign-out-btn" title="Sign Out of Session">
-          🚪 Sign Out
-        </button>
-      </div>
-    </header>
+      </header>
 
-    <!-- Role Notification Banner -->
-    <div class="role-banner" id="roleBanner">
-      <div class="role-banner-content">
-        <span id="roleBannerIcon">👑</span>
-        <span id="roleBannerText">
-          <strong>Super Admin Executive Command:</strong> Full visibility into global flight surveys, live active patrols, central TMS CSV repository, and network-wide defect clearance metrics.
-        </span>
-      </div>
-      <div class="role-banner-action" id="roleBannerAction">
-        <button class="btn-secondary" id="openCertificateBtn" style="padding: 4px 10px; font-size: 11px; background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #86efac;">
-          🖨️ View TMS P-14 Safety Certificate
-        </button>
-      </div>
-    </div>
-
-    <!-- Main Container -->
-    <main class="container">
-
-      <!-- ============================================================== -->
-      <!-- WORKSPACE 1: SUPER ADMIN PLATFORM -->
-      <!-- ============================================================== -->
-      <section id="admin-workspace" class="role-workspace active">
-        
-        <!-- Executive Key Performance Indicators -->
-        <div class="metrics-row">
-          <div class="metric-card">
-            <span class="metric-label">Total Drone Surveys</span>
-            <span class="metric-value" id="adminTotalSurveys">4 Surveys</span>
-            <span class="metric-subtext">148.5 km track audited</span>
+      <!-- Hero Progress Section (The 95 + Glowing Gradient Bar) -->
+      <section class="hero-dashboard-row">
+        <div class="hero-stat-block">
+          <div class="hero-big-number" id="heroBigScore">95</div>
+          <div class="hero-stat-label">learners on the platform</div>
+        </div>
+        <div class="hero-progress-block">
+          <div class="hero-progress-header">
+            <span class="hero-goal-text" id="heroGoalText">20% closer to your goal</span>
           </div>
-          <div class="metric-card" style="border-color: rgba(6, 182, 212, 0.4);">
-            <span class="metric-label">Active Live Surveys</span>
-            <span class="metric-value" style="color: #38bdf8;" id="adminLiveSurveys">
-              <span class="pulse-dot" style="display: inline-block; vertical-align: middle; margin-right: 4px;"></span> 1 Flight
+          <div class="gradient-bar-container">
+            <div class="gradient-bar-fill" id="heroGradientFill" style="width: 72%;">
+              <span class="gradient-pill-label" id="gradientPillLabel">10k</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Three Columns Metric Row (Active Instructors / Completion Rate) -->
+      <section class="metrics-three-cols">
+        <div class="metric-col-card">
+          <span class="metric-col-label">Active instructors</span>
+          <div class="metric-number-row">
+            <span class="trend-indicator down">
+              <span class="trend-badge-icon">↓</span>
             </span>
-            <span class="metric-subtext">Delhi-Mathura KM 122.4</span>
-          </div>
-          <div class="metric-card">
-            <span class="metric-label">Total Defects Identified</span>
-            <span class="metric-value" id="adminTotalDefects">9 Defects</span>
-            <span class="metric-subtext">Detected by RT-DETR-L</span>
-          </div>
-          <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
-            <span class="metric-label">Cleared vs Pending</span>
-            <span class="metric-value" id="adminClearanceRatio" style="color: #34d399;">6 / 3</span>
-            <span class="metric-subtext" id="adminClearancePct">66.7% Clearance Rate</span>
+            <span class="metric-bold-value" id="metricActivePatrols">12,639</span>
+            <span class="trend-indicator down" style="font-size: 11px; margin-left: auto;">12% from last month</span>
           </div>
         </div>
 
-        <!-- Live Surveys Radar & Geographical Overview -->
-        <div class="grid-2">
-          <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <h3 style="font-size: 15px; color: #fff;">🛰️ Live Drone Fleet Radar & Corridor GIS</h3>
-                <p style="font-size: 11px; color: var(--text-muted);">Real-time tracking of in-flight surveys, surveyed corridors, and hazard points.</p>
-              </div>
-              <div style="display: flex; gap: 6px;">
-                <span class="badge badge-purple" id="radarFlightBadge">FLT-DEL-104 (In Flight)</span>
-              </div>
+        <div class="metric-col-card">
+          <span class="metric-col-label">Active instructors</span>
+          <div class="metric-number-row">
+            <span class="trend-indicator down">
+              <span class="trend-badge-icon">↓</span>
+            </span>
+            <span class="metric-bold-value" id="metricSurveysDone">12,639</span>
+            <span class="trend-indicator down" style="font-size: 11px; margin-left: auto;">12% from last month</span>
+          </div>
+        </div>
+
+        <div class="metric-col-card">
+          <span class="metric-col-label">Course completion rate</span>
+          <div class="metric-number-row">
+            <span class="trend-indicator up">
+              <span class="trend-badge-icon">↑</span>
+            </span>
+            <span class="metric-bold-value" id="metricClearanceRate">65%</span>
+            <span class="trend-indicator up" style="font-size: 11px; margin-left: auto;">8% from last month</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Split Grid: Left Table/Tool + Right Radial Flower Chart -->
+      <section class="dashboard-split-grid">
+
+        <!-- Left Panel: Top Learners / Track Incidents Table -->
+        <div class="section-panel-card">
+          <div class="panel-header-row">
+            <div class="panel-title-wrap">
+              <span class="panel-title" id="leftPanelTitle">Top learners</span>
+              <span class="panel-subtext" id="leftPanelSubtext">125K total, review their progress</span>
             </div>
-            <div id="adminMapContainer" style="height: 400px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color);"></div>
             
-            <div class="hud-bar" style="margin-top: 10px;">
-              <div class="hud-item"><span>Green Lines</span><span style="color: #34d399;">Cleared Corridors</span></div>
-              <div class="hud-item"><span>Amber Lines</span><span style="color: #fbbf24;">Pending Remediation</span></div>
-              <div class="hud-item"><span>Cyan Marker</span><span style="color: #38bdf8;">Live Active Drone</span></div>
-              <div class="hud-item"><span>Red Pins</span><span style="color: #f87171;">Critical Defects</span></div>
+            <!-- Segmented Pill Switcher ([Week] [Month] / [Inspection] [Video]) -->
+            <div class="segmented-pill-toggle">
+              <button class="seg-pill-btn active" data-subview="list">Week</button>
+              <button class="seg-pill-btn" data-subview="month">Month</button>
+              <button class="seg-pill-btn" data-subview="sahi">4K Slicer</button>
+              <button class="seg-pill-btn" data-subview="video">Patrol Clip</button>
             </div>
           </div>
 
-          <!-- Master TMS & CSV Repository -->
-          <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <h3 style="font-size: 15px; color: #fff;">📁 Central TMS Survey & CSV Repository</h3>
-                <p style="font-size: 11px; color: var(--text-muted);">Official database repository of all drone flight surveys, AI outputs, and clearance audits.</p>
-              </div>
+          <!-- SUBVIEW 1: MODERN INCIDENTS / LEARNERS LIST (MATCHING INSPIRATION IMAGE) -->
+          <div id="subviewList" class="sub-panel-view active">
+            <div class="incident-rows-list" id="incidentRowsList">
+              <!-- Dynamically rendered rows matching: Ahmad Curtis, Emma Smith, William Hall, Liam Lee -->
+            </div>
+          </div>
+
+          <!-- SUBVIEW 2: 4K SAHI ORTHOPHOTO SLICER -->
+          <div id="subviewSahi" class="sub-panel-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 13px; font-weight: 700;">Orthophoto Aerial Track View (GSD: 0.65 mm/px)</span>
               <div style="display: flex; gap: 6px;">
-                <button id="adminDownloadMasterCsvBtn" class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 11px;">
-                  📥 Export Master CSV
+                <label class="category-soft-pill" style="cursor: pointer;">
+                  📁 Upload Photo
+                  <input type="file" id="customImageInput" accept="image/*" style="display: none;">
+                </label>
+                <button id="runStillInspectBtn" class="category-soft-pill" style="cursor: pointer; background: #111827; color: #fff;">
+                  🔍 Run SAHI
                 </button>
               </div>
             </div>
 
-            <div class="data-table-wrapper" style="max-height: 420px; overflow-y: auto;">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Survey ID</th>
-                    <th>Corridor Section</th>
-                    <th>Date</th>
-                    <th>Defects</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="adminSurveysTableBody">
-                  <!-- Dynamically Populated from DB -->
-                </tbody>
-              </table>
+            <div class="canvas-wrapper" id="canvasWrapper">
+              <img id="stillImage" class="canvas-viewport" src="sample_data/sample_track_image.jpg" alt="Aerial Rail Track">
+              <canvas id="overlayCanvas"></canvas>
+            </div>
+
+            <div class="hud-clean-bar">
+              <div class="hud-clean-item"><span>Resolution</span><span id="resHudText">2752 × 1536 px</span></div>
+              <div class="hud-clean-item"><span>Drone GSD</span><span>0.65 mm/px</span></div>
+              <div class="hud-clean-item"><span>GPS Fix</span><span id="gpsHudText">28.6148°N, 77.2096°E</span></div>
+              <div class="hud-clean-item"><span>Overlay</span><span id="bboxStatusText" style="color: #10b981;">Active</span></div>
             </div>
           </div>
+
+          <!-- SUBVIEW 3: PATROL VIDEO STREAM -->
+          <div id="subviewVideo" class="sub-panel-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 13px; font-weight: 700;">Live Drone Patrol Video Feed</span>
+              <label class="category-soft-pill" style="cursor: pointer;">
+                🎥 Upload Video
+                <input type="file" id="customVideoInput" accept="video/*" style="display: none;">
+              </label>
+            </div>
+
+            <div style="position: relative; width: 100%; border-radius: var(--radius-lg); overflow: hidden; background: #000;">
+              <video id="patrolVideo" src="sample_data/sample_track_flight.mp4" controls autoplay loop muted style="width: 100%; height: auto; max-height: 440px; display: block;"></video>
+            </div>
+
+            <div class="hud-clean-bar">
+              <div class="hud-clean-item"><span>Flight Time</span><span id="videoTime">00:04.2s</span></div>
+              <div class="hud-clean-item"><span>Speed</span><span id="vSpd">6.8 km/h</span></div>
+              <div class="hud-clean-item"><span>Altitude</span><span id="vAlt">3.8 m</span></div>
+              <div class="hud-clean-item"><span>Chainage</span><span id="vKm">KM 122.400</span></div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Analytics Breakdown Row (Full Project Scale) -->
-        <div class="grid-2" style="margin-top: 20px;">
-          <!-- Defect Severity Breakdown Widget -->
-          <div class="card">
-            <h3 style="font-size: 15px; color: #fff; margin-bottom: 8px;">📊 Divisional Track Hazard & Severity Distribution</h3>
-            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px;">Risk breakdown across Indian Railways speed corridors.</p>
-            
-            <div class="analytics-bar-group">
-              <div class="bar-label-row">
-                <span>🔴 Critical (Immediate Block / Speed Restriction)</span>
-                <span id="statCriticalPct" style="font-weight: 700; color: #f87171;">22.2% (2)</span>
-              </div>
-              <div class="analytics-progress-bg">
-                <div class="analytics-progress-bar" id="barCritical" style="width: 22.2%; background: #ef4444;"></div>
-              </div>
-            </div>
-
-            <div class="analytics-bar-group">
-              <div class="bar-label-row">
-                <span>🟡 Medium (Gang Replacement / Clip Tamping)</span>
-                <span id="statMediumPct" style="font-weight: 700; color: #fbbf24;">44.4% (4)</span>
-              </div>
-              <div class="analytics-progress-bg">
-                <div class="analytics-progress-bar" id="barMedium" style="width: 44.4%; background: #eab308;"></div>
-              </div>
-            </div>
-
-            <div class="analytics-bar-group">
-              <div class="bar-label-row">
-                <span>🟢 Low (Scheduled Grinding / Monitoring)</span>
-                <span id="statLowPct" style="font-weight: 700; color: #34d399;">33.3% (3)</span>
-              </div>
-              <div class="analytics-progress-bg">
-                <div class="analytics-progress-bar" id="barLow" style="width: 33.3%; background: #10b981;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Defect Class Distribution Matrix -->
-          <div class="card">
-            <h3 style="font-size: 15px; color: #fff; margin-bottom: 8px;">🏷️ Anomaly Category Density (RT-DETR-L)</h3>
-            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px;">Physical component breakdown along surveyed tracks.</p>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              <div class="category-stat-box">
-                <span class="cat-stat-lbl">Pandrol Fasteners</span>
-                <span class="cat-stat-val" id="catFastenerCount">3 Incidents</span>
-                <div class="cat-stat-bar" style="width: 65%; background: var(--cyan-accent);"></div>
-              </div>
-              <div class="category-stat-box">
-                <span class="cat-stat-lbl">Rail Fractures & Wear</span>
-                <span class="cat-stat-val" id="catRailCount">4 Incidents</span>
-                <div class="cat-stat-bar" style="width: 80%; background: #f87171;"></div>
-              </div>
-              <div class="category-stat-box">
-                <span class="cat-stat-lbl">Concrete Sleepers</span>
-                <span class="cat-stat-val" id="catSleeperCount">1 Incident</span>
-                <div class="cat-stat-bar" style="width: 25%; background: #fbbf24;"></div>
-              </div>
-              <div class="category-stat-box">
-                <span class="cat-stat-lbl">Ballast Washout</span>
-                <span class="cat-stat-val" id="catBallastCount">1 Incident</span>
-                <div class="cat-stat-bar" style="width: 25%; background: #a78bfa;"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- AI Architecture & Benchmarks Section -->
-        <div class="card" style="margin-top: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h3 style="font-size: 15px; color: #fff;">🧠 Enterprise AI Model Weights & Validation Matrix</h3>
-            <span class="badge badge-green">3 Production Checkpoints Cataloged</span>
-          </div>
-          <div class="data-table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Model Release</th>
-                  <th>Training Optimization</th>
-                  <th>$mAP_{50}$</th>
-                  <th>Latency (RTX A4000)</th>
-                  <th>Anomaly Sanitization</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>RT-DETR-L v3 (Sanitized 85)</strong></td>
-                  <td>AdamW, Cleaned Box Scale, Zero Tie Leakage</td>
-                  <td><span class="badge badge-green">49.37%</span></td>
-                  <td>13.3 ms</td>
-                  <td>97.3% Noise Eliminated (0.5% Anomaly)</td>
-                  <td><span class="badge badge-cyan">Active Production</span></td>
-                </tr>
-                <tr>
-                  <td><strong>RT-DETR-L v2 (Canonical 85)</strong></td>
-                  <td>AdamW, Albumentations CLAHE, 50 Epochs</td>
-                  <td><span class="badge badge-green">50.74%</span></td>
-                  <td>13.5 ms</td>
-                  <td>19.5% Anomaly</td>
-                  <td><span class="badge badge-purple">Archived</span></td>
-                </tr>
-                <tr>
-                  <td><strong>RT-DETR-L v1 (Baseline)</strong></td>
-                  <td>Initial Consolidated Run, SGD</td>
-                  <td><span class="badge badge-green">53.75%</span></td>
-                  <td>13.4 ms</td>
-                  <td>19.5% Anomaly</td>
-                  <td><span class="badge badge-purple">Archived</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- ============================================================== -->
-      <!-- WORKSPACE 2: OPERATOR PLATFORM (DRONE PILOT & AI REVIEW) -->
-      <!-- ============================================================== -->
-      <section id="operator-workspace" class="role-workspace">
-        
-        <!-- Operator Session Sub-Header -->
-        <div class="session-bar">
-          <div class="session-info">
-            <div><strong style="color: #fff;">Active Survey Session:</strong> <code style="color: var(--cyan-accent);">SURV-2026-LIVE (Flight 104)</code></div>
-            <div style="font-size: 11px; color: var(--text-muted);">Corridor: Delhi-Mathura Mainline (KM 122.400 - 122.800) • Pilot: <span id="opPilotName">Capt. A. Verma</span></div>
-          </div>
-          <div class="session-actions" style="display: flex; gap: 8px;">
-            <button id="operatorSubmitSurveyBtn" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-              📝 Accept & Submit Survey to TMS Database
+        <!-- Right Panel: The Radial Flower / Petal Radar Widget (MATCHING INSPIRATION IMAGE) -->
+        <div class="section-panel-card">
+          <div class="panel-header-row">
+            <span class="panel-title">Learner trends</span>
+            <button class="category-soft-pill" id="filterTrendsBtn" style="border: 1px solid var(--border-light); cursor: pointer;">
+              ⚡ Filter
             </button>
           </div>
-        </div>
 
-        <!-- Navigation Tabs for Operator -->
-        <div class="operator-nav">
-          <button class="op-tab-btn active" data-optab="op-still-view">📷 4K Still SAHI Inspection</button>
-          <button class="op-tab-btn" data-optab="op-video-view">🎥 Flight Patrol Video Stream</button>
-        </div>
+          <!-- Radial Petal Flower Chart -->
+          <div class="flower-widget-wrapper">
+            <div class="flower-chart-canvas">
+              <!-- Translucent Glowing Colored Petals -->
+              <div class="petal petal-top"></div>
+              <div class="petal petal-top-right"></div>
+              <div class="petal petal-bottom-right"></div>
+              <div class="petal petal-bottom"></div>
+              <div class="petal petal-bottom-left"></div>
+              <div class="petal petal-top-left"></div>
 
-        <!-- OP TAB 1: 4K STILL SAHI INSPECTION -->
-        <div id="op-still-view" class="op-tab-content active">
-          <div class="grid-2">
-            <!-- Canvas & Viewport Card -->
-            <div class="card">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="font-size: 15px; color: #fff;">Orthophoto Aerial Track View (GSD: 0.65 mm/px)</h3>
-                <div class="canvas-controls">
-                  <button id="zoomInBtn" class="control-icon-btn" title="Zoom In">+</button>
-                  <button id="zoomOutBtn" class="control-icon-btn" title="Zoom Out">−</button>
-                  <button id="resetZoomBtn" class="control-icon-btn" title="Reset View">⟲</button>
-                </div>
+              <!-- Center Heart Icon (from image) -->
+              <div class="flower-center-heart">♥</div>
+
+              <!-- Petal Metric Labels matching inspiration image -->
+              <div class="petal-badge-lbl lbl-top">
+                87%
+                <span>Engagement</span>
               </div>
-
-              <div class="canvas-wrapper" id="canvasWrapper">
-                <img id="stillImage" class="canvas-viewport" src="sample_data/sample_track_image.jpg" alt="Aerial Rail Track">
-                <canvas id="overlayCanvas"></canvas>
+              <div class="petal-badge-lbl lbl-top-right">
+                89%
+                <span>Consistency</span>
               </div>
-
-              <div class="hud-bar">
-                <div class="hud-item"><span>Resolution</span><span id="resHudText">2752 × 1536 px</span></div>
-                <div class="hud-item"><span>Drone GSD</span><span>0.65 mm/px</span></div>
-                <div class="hud-item"><span>RTK GPS Fix</span><span id="gpsHudText">28.6148°N, 77.2096°E</span></div>
-                <div class="hud-item"><span>BBox Overlay</span><span id="bboxStatusText" style="color: #38bdf8;">Visible</span></div>
+              <div class="petal-badge-lbl lbl-bottom-right">
+                38%
+                <span>Motivation</span>
               </div>
-            </div>
-
-            <!-- Controls & Operator Verification Drawer -->
-            <div class="card">
-              <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">AI Inspection Controls & Verification</h3>
-              
-              <div class="control-group">
-                <label class="control-label">Flight Corridor Preset or Custom Upload</label>
-                <div style="display: flex; gap: 8px;">
-                  <select id="scenarioSelect" class="select-input" style="flex: 2;">
-                    <option value="scenario_fastener">Corridor A: Pandrol Fastener & Rail Wear (KM 122.400)</option>
-                    <option value="scenario_fracture">Corridor B: Track Fracture & Transverse Crack (KM 122.510)</option>
-                    <option value="scenario_clean">Corridor C: High-Speed Ballasted Mainline (Clean Track)</option>
-                  </select>
-                  <label class="btn-secondary" style="flex: 1; text-align: center; cursor: pointer; padding: 8px 6px; font-size: 11px;">
-                    📁 Upload Image
-                    <input type="file" id="customImageInput" accept="image/*" style="display: none;">
-                  </label>
-                </div>
+              <div class="petal-badge-lbl lbl-bottom">
+                21%
+                <span>Completion rate</span>
               </div>
-
-              <div class="control-group">
-                <div style="display: flex; justify-content: space-between;">
-                  <label class="control-label">AI Confidence Threshold</label>
-                  <span id="confVal" style="font-weight: 600; color: var(--cyan-accent);">30%</span>
-                </div>
-                <input type="range" id="confSlider" min="10" max="90" value="30" step="5" style="width: 100%; accent-color: var(--cyan-accent);">
+              <div class="petal-badge-lbl lbl-bottom-left">
+                39%
+                <span>Retention</span>
               </div>
-
-              <div class="control-group">
-                <label class="control-label">Defect Category Filters</label>
-                <div class="filter-pills-row">
-                  <button class="filter-pill active" data-cat="all">All</button>
-                  <button class="filter-pill active" data-cat="fastener">Fasteners</button>
-                  <button class="filter-pill active" data-cat="rail">Rails</button>
-                  <button class="filter-pill active" data-cat="sleeper">Sleepers</button>
-                </div>
-              </div>
-
-              <div style="display: flex; gap: 10px; margin-top: 14px;">
-                <button id="toggleBBoxBtn" class="btn-secondary" style="flex: 1;">Toggle BBoxes</button>
-                <button id="runStillInspectBtn" class="btn-primary" style="flex: 2;">🔍 Run SAHI 4K Slicer</button>
-              </div>
-
-              <!-- Operator Verification List -->
-              <div style="margin-top: 18px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <h4 style="font-size: 13px; color: var(--text-muted);">Detected Defects (Verify & Sign Off)</h4>
-                  <span class="badge badge-cyan" id="operatorVerifiedTally">3 Verified</span>
-                </div>
-                <div id="operatorDefectsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 230px; overflow-y: auto;">
-                  <!-- Dynamically Populated with Verify / Reject controls -->
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- OP TAB 2: PATROL VIDEO STREAM -->
-        <div id="op-video-view" class="op-tab-content">
-          <div class="grid-2">
-            <div class="card">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="font-size: 15px; color: #fff;">Live Drone Patrol Video Feed</h3>
-                <span class="badge badge-purple"><span class="pulse-dot"></span> ByteTrack Active</span>
-              </div>
-
-              <div style="position: relative; width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000;">
-                <video id="patrolVideo" src="sample_data/sample_track_flight.mp4" controls autoplay loop muted style="width: 100%; height: auto; max-height: 480px; display: block;"></video>
-                <div class="video-overlay-hud">
-                  <div class="v-hud-left">
-                    <div>ALT: <span id="vAlt">3.8 m</span> AGL</div>
-                    <div>SPD: <span id="vSpd">6.8 km/h</span></div>
-                    <div>GIMBAL: -45° PITCH</div>
-                  </div>
-                  <div class="v-hud-right">
-                    <div>LAT: <span id="vLat">28.6148° N</span></div>
-                    <div>LON: <span id="vLon">77.2096° E</span></div>
-                    <div>CHAINAGE: <span id="vKm">KM 122.400</span></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="hud-bar">
-                <div class="hud-item"><span>Flight Time</span><span id="videoTime">00:04.2s</span></div>
-                <div class="hud-item"><span>Drone Speed</span><span>6.8 km/h</span></div>
-                <div class="hud-item"><span>Altitude AGL</span><span>3.8 m</span></div>
-                <div class="hud-item"><span>Temporal Filter</span><span style="color: #34d399;">3-Hit Consecutive Confirm</span></div>
+              <div class="petal-badge-lbl lbl-top-left">
+                90%
+                <span>Focus time</span>
               </div>
             </div>
 
-            <div class="card">
-              <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Video Stream Telemetry & Clip</h3>
-              
-              <div class="control-group">
-                <label class="control-label">Patrol Video Feed or Custom File</label>
-                <div style="display: flex; gap: 8px;">
-                  <select id="videoSelect" class="select-input" style="flex: 2;">
-                    <option value="sample_data/sample_track_flight.mp4">Corridor Survey Flight 01 (Ballast & Ties)</option>
-                    <option value="sample_data/broken_track_patrol.mp4">Broken Track & Pandrol Defect Patrol Clip</option>
-                  </select>
-                  <label class="btn-secondary" style="flex: 1; text-align: center; cursor: pointer; padding: 8px 6px; font-size: 11px;">
-                    🎥 Upload Video
-                    <input type="file" id="customVideoInput" accept="video/*" style="display: none;">
-                  </label>
-                </div>
-              </div>
-
-              <div class="metrics-row" style="margin-top: 14px;">
-                <div class="metric-card">
-                  <span class="metric-label">Confirmed Tracklets</span>
-                  <span class="metric-value">2</span>
-                </div>
-                <div class="metric-card">
-                  <span class="metric-label">False Flashes Blocked</span>
-                  <span class="metric-value">14</span>
-                </div>
-              </div>
-
-              <div style="margin-top: 16px;">
-                <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">ByteTrack Confirmed Events</h4>
-                <div class="event-item" style="margin-bottom: 8px;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-weight: 600; color: #f87171;">Tracklet #14: Damaged Fastener</span>
-                    <span class="sev-pill sev-med">MEDIUM</span>
-                  </div>
-                  <div style="color: var(--text-muted); font-size: 11px;">Observed across 18 consecutive frames • Chainage KM 122.415</div>
-                </div>
-                <div class="event-item">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-weight: 600; color: #34d399;">Tracklet #22: Rail Wear (Gauge Corner)</span>
-                    <span class="sev-pill sev-low">LOW</span>
-                  </div>
-                  <div style="color: var(--text-muted); font-size: 11px;">Observed across 32 consecutive frames • Chainage KM 122.400</div>
-                </div>
-              </div>
+            <div style="text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 12px;">
+              Multi-factor structural track compliance radar.
             </div>
           </div>
         </div>
 
       </section>
 
-      <!-- ============================================================== -->
-      <!-- WORKSPACE 3: DEFECT CLEARANCE PLATFORM (FIELD P-WAY GANG) -->
-      <!-- ============================================================== -->
-      <section id="clearance-workspace" class="role-workspace">
-        
-        <!-- Clearance Header / Work Order Bar -->
-        <div class="session-bar" style="border-left: 4px solid var(--yellow-med);">
-          <div class="session-info">
-            <div><strong style="color: #fff;">Field Maintenance Work Order:</strong> <span id="clearanceWorkOrderTitle" style="color: #fbbf24;">SURV-2026-LIVE (Delhi-Mathura Mainline)</span></div>
-            <div style="font-size: 11px; color: var(--text-muted);">Assigned P-Way Gang: <span style="color: #fff;" id="clGangName">Gang 12 (Sub-division Agra North)</span> • Status: <span id="clearanceStatusTag" style="color: #fbbf24; font-weight: 700;">PENDING ACTION</span></div>
-          </div>
-          <div class="session-actions" style="display: flex; gap: 8px;">
-            <button id="certifySectionClearanceBtn" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);" disabled>
-              🛡️ Certify Section Defect Clearance Complete
-            </button>
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <!-- Defect Punch-List (Simple, High-Contrast for Field Crews) -->
-          <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <h3 style="font-size: 15px; color: #fff;">🔧 On-Site Defect Remediation Punch-List</h3>
-                <p style="font-size: 11px; color: var(--text-muted);">Mark each defect as repaired on-site according to Indian Railways IRPWM standards.</p>
-              </div>
-              <span class="badge badge-purple" id="clearanceProgressText">0 / 3 Repaired</span>
-            </div>
-
-            <div id="clearancePunchlist" style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto;">
-              <!-- Dynamically Populated Defect Punch Cards -->
-            </div>
-          </div>
-
-          <!-- Georeferenced Location & Remedial Instructions -->
-          <div class="card">
-            <h3 style="font-size: 15px; color: #fff; margin-bottom: 8px;">🗺️ Defect Geolocation Pinpoint</h3>
-            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">Satellite pinpoint of identified defect location for field walking crew.</p>
-            
-            <div id="clearanceMapContainer" style="height: 320px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 14px;"></div>
-
-            <div class="defect-inspector" id="clearanceDetailBox">
-              <div class="defect-inspector-header">
-                <span style="font-weight: 700; color: #38bdf8;">Selected Defect Remedial Action Standard</span>
-                <span id="clDetailSeverity" class="sev-pill sev-high">CRITICAL</span>
-              </div>
-              <div style="font-size: 12px; display: flex; flex-direction: column; gap: 6px;">
-                <div><strong>Chainage:</strong> <span id="clDetailChainage">KM 122.430</span></div>
-                <div><strong>GPS Coordinates:</strong> <span id="clDetailCoords">28.6158°N, 77.2104°E</span></div>
-                <div><strong>Official IRPWM Standard:</strong> <span id="clDetailAction" style="color: #fbbf24;">IRPWM Para 241: Emergency Speed Restriction (30 km/h) & Clamp Fishplates</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </section>
-
-    </main>
-
-    <!-- Modal 1: Submission & Sign-off Confirmation -->
-    <div class="modal-backdrop" id="submitModal" style="display: none;">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h3 style="font-size: 16px; color: #fff;">✅ Sign & Submit Survey to TMS Database</h3>
-          <button class="modal-close-btn" id="closeModalBtn">&times;</button>
-        </div>
-        <div class="modal-body" style="font-size: 13px; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
-          <p>You are certifying this drone flight survey as complete. This will commit the official record into the Central TMS Repository and dispatch it to the P-Way Field Clearance Team.</p>
-          <div style="background: rgba(15, 23, 42, 0.8); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-            <div><strong>Survey ID:</strong> <span id="modalSurveyId">SURV-2026-LIVE</span></div>
-            <div><strong>Corridor:</strong> Delhi-Mathura Mainline (KM 122.400 - 122.800)</div>
-            <div><strong>Verified Defects:</strong> <span id="modalDefectsCount">3</span></div>
-            <div><strong>Digital Signature:</strong> <span id="modalPilotSign">Capt. A. Verma (Pilot IR-9921)</span></div>
-            <div><strong>Timestamp:</strong> <span id="modalTimestamp">-</span></div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" id="cancelModalBtn" style="width: auto; padding: 8px 16px;">Cancel</button>
-          <button class="btn-primary" id="confirmSubmitSurveyBtn" style="width: auto; padding: 8px 20px; background: #10b981;">
-            Confirm & Dispatch to Gang
-          </button>
-        </div>
-      </div>
     </div>
-
-    <!-- Modal 2: Official Printable TMS Form P-14 Safety Certificate -->
-    <div class="modal-backdrop" id="certModal" style="display: none;">
-      <div class="modal-box cert-modal-box">
-        <div class="modal-header">
-          <h3 style="font-size: 16px; color: #fff;">📜 Indian Railways Track Safety & Clearance Certificate</h3>
-          <button class="modal-close-btn" id="closeCertModalBtn">&times;</button>
-        </div>
-        
-        <!-- Printable Certificate Paper Container -->
-        <div class="printable-cert-paper" id="printableCertificate">
-          <div class="cert-heading">
-            <div style="font-size: 24px;">🚆</div>
-            <h2>GOVERNMENT OF INDIA • MINISTRY OF RAILWAYS</h2>
-            <h3>PERMANENT WAY INSPECTION & DEFECT CLEARANCE CERTIFICATE</h3>
-            <p><strong>FORM TMS P-14</strong> (Issued under Indian Railways Permanent Way Manual Para 241 & 315)</p>
-          </div>
-
-          <div class="cert-metadata-grid">
-            <div><strong>Certificate No:</strong> IR-TMS-2026-DEL-104</div>
-            <div><strong>Date of Inspection:</strong> 01-Nov-2026</div>
-            <div><strong>Railway Zone:</strong> Northern Railway (NR)</div>
-            <div><strong>Division:</strong> Delhi (DLI)</div>
-            <div><strong>Corridor:</strong> Delhi - Mathura High Speed Line</div>
-            <div><strong>Chainage Range:</strong> KM 122.400 to KM 122.800</div>
-            <div><strong>Inspection Method:</strong> RT-DETR-L 4K Aerial Drone Patrol</div>
-            <div><strong>Clearance Status:</strong> <span id="certStatusText" style="color: #059669; font-weight: 700;">100% DEFECTS CLEARED</span></div>
-          </div>
-
-          <h4 style="margin: 14px 0 6px; font-size: 12px; text-transform: uppercase;">Rectified Physical Track Defects Ledger</h4>
-          <table class="cert-table">
-            <thead>
-              <tr>
-                <th>Defect ID</th>
-                <th>Category</th>
-                <th>Severity</th>
-                <th>Chainage</th>
-                <th>IRPWM Standard Remedial Action Taken</th>
-                <th>Gang Sign-off</th>
-              </tr>
-            </thead>
-            <tbody id="certTableBody">
-              <!-- Dynamically Populated -->
-            </tbody>
-          </table>
-
-          <div class="cert-declaration">
-            <strong>OFFICIAL STATUTORY TRACK FITNESS DECLARATION:</strong><br>
-            "It is hereby certified that the permanent way track between KM 122.400 and KM 122.800 has been thoroughly inspected via autonomous aerial sensor and artificial intelligence vision models. All identified structural track anomalies have been rectified on-site in strict accordance with IRPWM engineering standards. The track is certified <strong>FIT FOR COMMERCIAL TRAIN TRAFFIC AT SANCTIONED SPEED (130 KM/H)</strong>."
-          </div>
-
-          <div class="cert-signatures">
-            <div class="sig-block">
-              <div class="sig-line">Capt. A. Verma</div>
-              <span>Drone Pilot & Sensor Lead (IR-9921)</span>
-            </div>
-            <div class="sig-block">
-              <div class="sig-line">M. Kumar</div>
-              <span>Junior Engineer (P-Way Gang 12)</span>
-            </div>
-            <div class="sig-block">
-              <div class="sig-line">Er. Rajesh Singhania</div>
-              <span>Chief Track Engineer (Divisional HQ)</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn-secondary" id="closeCertBtn2" style="width: auto; padding: 8px 16px;">Close</button>
-          <button class="btn-primary" onclick="printCertificate()" style="width: auto; padding: 8px 20px; background: #0284c7;">
-            🖨️ Print / Save Official PDF
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Floating Notification Toasts -->
-    <div id="toastContainer" class="toast-container"></div>
-
-    <footer class="footer">
-      <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto; flex-wrap: wrap; gap: 12px;">
-        <div>RailSamiksha AI • Enterprise Multi-Role P-Way Inspection Platform • DeepMind Antigravity</div>
-        <div style="display: flex; gap: 16px;">
-          <span style="color: var(--text-dim); font-size: 12px;">Active Role: <strong id="footerActiveRole" style="color: var(--cyan-accent);">Super Admin</strong></span>
-          <a href="https://github.com" target="_blank" style="color: var(--cyan-accent); text-decoration: none; font-size: 12px;">GitHub Repo</a>
-        </div>
-      </div>
-    </footer>
-
   </div>
+
+  <!-- Modal 1: Submission Confirmation -->
+  <div class="modal-backdrop" id="submitModal" style="display: none;">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: var(--text-dark);">Sign & Submit Survey to TMS</h3>
+        <button class="three-dots-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <div style="font-size: 13px; color: var(--text-body); display: flex; flex-direction: column; gap: 10px;">
+        <p>Certify this drone flight survey as complete and dispatch to the P-Way Field Clearance Team.</p>
+        <div style="background: var(--bg-pill); padding: 14px; border-radius: var(--radius-md);">
+          <div><strong>Survey ID:</strong> <span id="modalSurveyId">SURV-2026-LIVE</span></div>
+          <div><strong>Corridor:</strong> Delhi-Mathura Mainline (KM 122.400 - 122.800)</div>
+          <div><strong>Verified Defects:</strong> <span id="modalDefectsCount">3</span></div>
+          <div><strong>Digital Signature:</strong> <span id="modalPilotSign">Capt. A. Verma (Pilot IR-9921)</span></div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+        <button class="btn-dark-pill" id="cancelModalBtn" style="background: var(--bg-pill); color: var(--text-dark);">Cancel</button>
+        <button class="btn-dark-pill" id="confirmSubmitSurveyBtn" style="background: #10b981;">
+          Confirm & Dispatch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Official Printable TMS Form P-14 Safety Certificate -->
+  <div class="modal-backdrop" id="certModal" style="display: none;">
+    <div class="modal-box" style="max-width: 760px; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: var(--text-dark);">📜 Indian Railways Track Safety Certificate</h3>
+        <button class="three-dots-btn" id="closeCertModalBtn">&times;</button>
+      </div>
+      
+      <div class="printable-cert-paper" id="printableCertificate">
+        <div style="text-align: center; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px;">
+          <h2 style="font-size: 15px; font-weight: 800;">GOVERNMENT OF INDIA • MINISTRY OF RAILWAYS</h2>
+          <h3 style="font-size: 13px; color: #0284c7;">PERMANENT WAY INSPECTION & DEFECT CLEARANCE CERTIFICATE</h3>
+          <p style="font-size: 10px; color: #4b5563;"><strong>FORM TMS P-14</strong> (Issued under IRPWM Para 241 & 315)</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; background: #f9fafb; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;">
+          <div><strong>Certificate No:</strong> IR-TMS-2026-DEL-104</div>
+          <div><strong>Date:</strong> 01-Nov-2026</div>
+          <div><strong>Zone / Division:</strong> Northern Railway (NR) / Delhi</div>
+          <div><strong>Corridor:</strong> Delhi - Mathura High Speed Line</div>
+          <div><strong>Chainage:</strong> KM 122.400 to KM 122.800</div>
+          <div><strong>Status:</strong> <span id="certStatusText" style="color: #16a34a; font-weight: 700;">100% DEFECTS CLEARED</span></div>
+        </div>
+
+        <h4 style="margin: 14px 0 6px; font-size: 11px; text-transform: uppercase;">Rectified Physical Track Defects Ledger</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+          <thead>
+            <tr style="background: #111827; color: #fff;">
+              <th style="padding: 6px 8px; text-align: left;">Defect ID</th>
+              <th style="padding: 6px 8px; text-align: left;">Category</th>
+              <th style="padding: 6px 8px; text-align: left;">Severity</th>
+              <th style="padding: 6px 8px; text-align: left;">Chainage</th>
+              <th style="padding: 6px 8px; text-align: left;">IRPWM Remedial Action</th>
+              <th style="padding: 6px 8px; text-align: left;">Sign-off</th>
+            </tr>
+          </thead>
+          <tbody id="certTableBody">
+            <!-- Dynamically Populated -->
+          </tbody>
+        </table>
+
+        <div style="margin-top: 14px; background: #f0fdf4; border-left: 4px solid #16a34a; padding: 10px; font-size: 11px; color: #166534;">
+          <strong>STATUTORY TRACK FITNESS DECLARATION:</strong><br>
+          "Certified that permanent way track between KM 122.400 and KM 122.800 has been inspected via autonomous aerial drone sensors and RT-DETR-L models. All physical defects have been rectified in accordance with IRPWM standards. The track is certified <strong>FIT FOR COMMERCIAL PASSENGER OPERATION AT SANCTIONED SPEED (130 KM/H)</strong>."
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; text-align: center; font-size: 10px;">
+          <div><div style="border-top: 1px dashed #111827; padding-top: 4px; font-weight: 700;">Capt. A. Verma</div><span>Drone Pilot (IR-9921)</span></div>
+          <div><div style="border-top: 1px dashed #111827; padding-top: 4px; font-weight: 700;">M. Kumar</div><span>JE (P-Way Gang 12)</span></div>
+          <div><div style="border-top: 1px dashed #111827; padding-top: 4px; font-weight: 700;">Er. Rajesh Singhania</div><span>Chief Track Engineer (HQ)</span></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button class="btn-dark-pill" id="closeCertBtn2" style="background: var(--bg-pill); color: var(--text-dark);">Close</button>
+        <button class="btn-dark-pill" onclick="window.print()" style="background: #111827;">
+          🖨️ Print / Save PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="app.js"></script>
