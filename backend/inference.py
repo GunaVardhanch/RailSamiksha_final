@@ -21,6 +21,9 @@ import numpy as np
 import torch
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 PROD_APP_DIR = ROOT_DIR / "RailSamiksha_Production_App"
 if str(PROD_APP_DIR) not in sys.path:
     sys.path.insert(0, str(PROD_APP_DIR))
@@ -38,13 +41,17 @@ from core.pipeline import RailSamikshaProductionPipeline
 from core.detector import annotate_detections
 
 # Model Checkpoint Registry
+ROOT_BEST_PT = ROOT_DIR / "weights" / "best.pt"
+PROD_BEST_PT = PROD_APP_DIR / "weights" / "best.pt"
+DEPLOYED_WEIGHTS = ROOT_BEST_PT if ROOT_BEST_PT.exists() else PROD_BEST_PT
+
 MODEL_REGISTRY = {
-    "deployed_prod": PROD_APP_DIR / "weights" / "best.pt",
+    "deployed_prod": DEPLOYED_WEIGHTS,
     "sanitized_85": ROOT_DIR / "release_weights" / "rtdetr_v3_sanitized_85_best.pt",
     "canonical_85": ROOT_DIR / "release_weights" / "rtdetr_v3_canonical_85_best.pt"
 }
 
-# Primary default weights: the fully working deployed model from RailSamiksha_Production_App
+# Primary default weights: the fully working deployed model
 PRIMARY_WEIGHTS = MODEL_REGISTRY["deployed_prod"] if MODEL_REGISTRY["deployed_prod"].exists() else Path(DEFAULT_PYTORCH_WEIGHTS)
 
 IRPWM_ACTIONS = {

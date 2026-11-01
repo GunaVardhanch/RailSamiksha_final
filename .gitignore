@@ -39,6 +39,8 @@ models/*.onnx
 !models/.gitkeep
 
 # Allow dedicated release & production app weights
+!weights/best.pt
+!weights/best.onnx
 !release_weights/*.pt
 !release_weights/*.onnx
 !RailSamiksha_Production_App/weights/*.pt

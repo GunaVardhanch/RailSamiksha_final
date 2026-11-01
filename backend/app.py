@@ -166,6 +166,15 @@ async def api_clear_defect(request):
         return JSONResponse({"success": True, "defect_id": defect_id, "cleared": True})
     return JSONResponse({"success": False, "error": err}, status_code=400)
 
+def resolve_sample_file(sample_name: str):
+    if not sample_name:
+        return None
+    for base in [ROOT_DIR / "samples", WEB_DIR / "sample_data", PROD_APP_DIR / "samples"]:
+        p = base / sample_name
+        if p.exists():
+            return p
+    return None
+
 async def api_infer_image(request):
     """
     Real-Time SAHI + RT-DETR-L Drone Photo Inference Endpoint.
@@ -202,8 +211,8 @@ async def api_infer_image(request):
         if uploaded_file and hasattr(uploaded_file, "read"):
             image_bytes = await uploaded_file.read()
         elif sample_name:
-            sample_p = PROD_APP_DIR / "samples" / sample_name
-            if sample_p.exists():
+            sample_p = resolve_sample_file(sample_name)
+            if sample_p and sample_p.exists():
                 with open(sample_p, "rb") as f:
                     image_bytes = f.read()
 
@@ -217,8 +226,8 @@ async def api_infer_image(request):
             use_sahi = bool(body.get("use_sahi", True))
 
             if sample_name:
-                sample_p = PROD_APP_DIR / "samples" / sample_name
-                if sample_p.exists():
+                sample_p = resolve_sample_file(sample_name)
+                if sample_p and sample_p.exists():
                     with open(sample_p, "rb") as f:
                         image_bytes = f.read()
             elif raw_b64:
@@ -230,8 +239,8 @@ async def api_infer_image(request):
 
     # Fallback to default sample track image if no bytes provided
     if not image_bytes:
-        default_sample = PROD_APP_DIR / "samples" / "sample_track_image.jpg"
-        if default_sample.exists():
+        default_sample = resolve_sample_file("sample_track_image.jpg")
+        if default_sample and default_sample.exists():
             with open(default_sample, "rb") as f:
                 image_bytes = f.read()
 
@@ -276,13 +285,9 @@ async def api_infer_video(request):
         if uploaded_file and hasattr(uploaded_file, "read"):
             video_bytes = await uploaded_file.read()
         elif sample_name:
-            # Check production app samples or web sample_data
-            p1 = PROD_APP_DIR / "samples" / sample_name
-            p2 = WEB_DIR / "sample_data" / sample_name
-            if p1.exists():
-                video_path = str(p1)
-            elif p2.exists():
-                video_path = str(p2)
+            resolved_p = resolve_sample_file(sample_name)
+            if resolved_p and resolved_p.exists():
+                video_path = str(resolved_p)
 
     elif "application/json" in content_type:
         try:
@@ -294,12 +299,9 @@ async def api_infer_video(request):
             model_choice = body.get("model", "deployed_prod")
 
             if sample_name:
-                p1 = PROD_APP_DIR / "samples" / sample_name
-                p2 = WEB_DIR / "sample_data" / sample_name
-                if p1.exists():
-                    video_path = str(p1)
-                elif p2.exists():
-                    video_path = str(p2)
+                resolved_p = resolve_sample_file(sample_name)
+                if resolved_p and resolved_p.exists():
+                    video_path = str(resolved_p)
         except Exception as e:
             return JSONResponse({"success": False, "error": f"Invalid JSON: {str(e)}"}, status_code=400)
 
