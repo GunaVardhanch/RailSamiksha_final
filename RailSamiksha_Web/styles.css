@@ -119,6 +119,20 @@ code, pre, .mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
+.sql-code-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  max-height: 480px;
+  overflow-y: auto;
+  white-space: pre;
+  color: var(--text-main);
+}
+
 /* Theme Toggle Button */
 .theme-toggle-btn {
   background: var(--bg-pill);
