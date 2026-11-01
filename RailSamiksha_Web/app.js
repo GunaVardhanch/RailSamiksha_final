@@ -1,11 +1,67 @@
 /**
- * RailSamiksha AI — Enterprise RBAC Platform Engine
+ * RailSamiksha AI — Enterprise RBAC Platform Engine with Authentication
  * Real-Time RT-DETR-L Aerial Defect Detection & P-Way TMS Analytics
- * Roles: Super Admin | Drone Operator | Defect Clearance Field Gang
+ * Auth: Sign In | Registration | Session Persistence | One-Click Demo Logins
  */
 
 // ============================================================================
-// 1. CENTRAL REACTIVE DATABASE STORE (TMS MASTER LEDGER)
+// 1. AUTHENTICATION & USER STORE
+// ============================================================================
+
+const DEFAULT_USERS = [
+  {
+    id: "USR-001",
+    name: "Er. Rajesh Singhania",
+    email: "admin@railsamiksha.gov.in",
+    username: "superadmin",
+    password: "admin123",
+    role: "admin",
+    roleLabel: "Super Admin (HQ)",
+    division: "Railway Board & Northern Railway HQ",
+    avatar: "👑"
+  },
+  {
+    id: "USR-002",
+    name: "Capt. A. Verma",
+    email: "operator@railsamiksha.gov.in",
+    username: "dronepilot",
+    password: "pilot123",
+    role: "operator",
+    roleLabel: "Field Drone Pilot",
+    division: "Northern Railway, Delhi Division",
+    avatar: "🎮"
+  },
+  {
+    id: "USR-003",
+    name: "M. Kumar (JE P-Way)",
+    email: "clearance@railsamiksha.gov.in",
+    username: "gang12",
+    password: "gang123",
+    role: "clearance",
+    roleLabel: "P-Way Field Gang 12",
+    division: "North Central Railway, Agra North",
+    avatar: "🔧"
+  }
+];
+
+// Initialize users in localStorage if not already present
+function getUsersDB() {
+  const stored = localStorage.getItem("RAILSAMIKSHA_USERS");
+  if (stored) {
+    try { return JSON.parse(stored); } catch (e) { /* fallback */ }
+  }
+  localStorage.setItem("RAILSAMIKSHA_USERS", JSON.stringify(DEFAULT_USERS));
+  return DEFAULT_USERS;
+}
+
+function saveUsersDB(users) {
+  localStorage.setItem("RAILSAMIKSHA_USERS", JSON.stringify(users));
+}
+
+let currentUser = null;
+
+// ============================================================================
+// 2. CENTRAL REACTIVE DATABASE STORE (TMS MASTER LEDGER)
 // ============================================================================
 
 const SURVEYS_DATABASE = [
@@ -88,7 +144,7 @@ const SURVEYS_DATABASE = [
     date: "2026-11-01 (Today)",
     pilot: "Capt. A. Verma (IR-9921)",
     clearanceGang: "Gang 12 (Sub-division Agra North)",
-    status: "IN_SURVEY", // Will transition to SUBMITTED_FOR_CLEARANCE then to CLEARED_100%
+    status: "IN_SURVEY",
     statusLabel: "● In Active Survey",
     statusClass: "badge-cyan",
     coordinates: [
@@ -144,13 +200,12 @@ const SURVEYS_DATABASE = [
   }
 ];
 
-// Current Active State
-let currentRole = "admin"; // 'admin' | 'operator' | 'clearance'
+// App View State
+let activeViewRole = "admin";
 let currentScenarioKey = "scenario_fastener";
 let currentConfThreshold = 0.30;
 let activeCategoryFilter = "all";
 let showBBoxes = true;
-let selectedDefectId = null;
 
 // Zoom and Pan
 let zoomLevel = 1.0;
@@ -167,37 +222,224 @@ let adminCorridorLayers = [];
 let clearanceMarkers = [];
 
 // ============================================================================
-// 2. DOM INITIALIZATION
+// 3. DOM INITIALIZATION & AUTH ROUTING
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  initRoleSwitcher();
+  initAuthUI();
   initAdminDashboard();
   initOperatorWorkspace();
   initClearanceWorkspace();
   initModals();
-  switchRole("admin");
+
+  // Check existing session
+  checkAuthSession();
 });
 
 // ============================================================================
-// 3. ROLE-BASED ACCESS CONTROL (RBAC) SWITCHER
+// 4. AUTHENTICATION CONTROLLER (SIGN IN / SIGN UP / DEMO / LOGOUT)
 // ============================================================================
 
-function initRoleSwitcher() {
-  const roleBtns = document.querySelectorAll(".role-btn");
-  roleBtns.forEach(btn => {
+function initAuthUI() {
+  const tabSignIn = document.getElementById("tabSignIn");
+  const tabSignUp = document.getElementById("tabSignUp");
+  const signInForm = document.getElementById("signInForm");
+  const signUpForm = document.getElementById("signUpForm");
+  const regRole = document.getElementById("regRole");
+  const regRoleDesc = document.getElementById("regRoleDesc");
+  const signOutBtn = document.getElementById("signOutBtn");
+
+  // Tab switching
+  tabSignIn.addEventListener("click", () => {
+    tabSignIn.classList.add("active");
+    tabSignUp.classList.remove("active");
+    signInForm.classList.add("active");
+    signUpForm.classList.remove("active");
+    hideAuthAlert();
+  });
+
+  tabSignUp.addEventListener("click", () => {
+    tabSignUp.classList.add("active");
+    tabSignIn.classList.remove("active");
+    signUpForm.classList.add("active");
+    signInForm.classList.remove("active");
+    hideAuthAlert();
+  });
+
+  // Role Description dynamic update
+  regRole.addEventListener("change", (e) => {
+    const val = e.target.value;
+    if (val === "operator") {
+      regRoleDesc.textContent = "Access to 4K SAHI inspection, video patrol telemetry HUD, and survey submission to TMS.";
+    } else if (val === "clearance") {
+      regRoleDesc.textContent = "Access to georeferenced defect map, IRPWM remedial punch-lists, and track safety certification.";
+    } else if (val === "admin") {
+      regRoleDesc.textContent = "Full divisional command, live radar fleet tracking, and master TMS CSV repository export.";
+    }
+  });
+
+  // Handle Sign In Submit
+  signInForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const identifier = document.getElementById("loginIdentifier").value.trim().toLowerCase();
+    const password = document.getElementById("loginPassword").value;
+
+    const users = getUsersDB();
+    const user = users.find(u => 
+      (u.email.toLowerCase() === identifier || u.username.toLowerCase() === identifier) && 
+      u.password === password
+    );
+
+    if (user) {
+      authenticateUser(user);
+    } else {
+      showAuthAlert("Invalid credentials. Try demo credentials (e.g. admin@railsamiksha.gov.in / admin123)", "error");
+    }
+  });
+
+  // Handle Sign Up Submit
+  signUpForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.getElementById("regFullName").value.trim();
+    const email = document.getElementById("regEmail").value.trim().toLowerCase();
+    const username = document.getElementById("regUsername").value.trim().toLowerCase();
+    const role = document.getElementById("regRole").value;
+    const division = document.getElementById("regDivision").value.trim();
+    const pass = document.getElementById("regPassword").value;
+    const confirmPass = document.getElementById("regConfirmPassword").value;
+
+    if (pass !== confirmPass) {
+      showAuthAlert("Passwords do not match. Please re-enter.", "error");
+      return;
+    }
+
+    const users = getUsersDB();
+    if (users.some(u => u.email.toLowerCase() === email)) {
+      showAuthAlert("An account with this email already exists.", "error");
+      return;
+    }
+    if (users.some(u => u.username.toLowerCase() === username)) {
+      showAuthAlert("This username is already taken. Please choose another.", "error");
+      return;
+    }
+
+    let avatar = "🎮";
+    let roleLabel = "Field Drone Pilot";
+    if (role === "admin") { avatar = "👑"; roleLabel = "Super Admin (HQ)"; }
+    if (role === "clearance") { avatar = "🔧"; roleLabel = "P-Way Field Gang"; }
+
+    const newUser = {
+      id: `USR-${Date.now()}`,
+      name,
+      email,
+      username,
+      password: pass,
+      role,
+      roleLabel,
+      division,
+      avatar
+    };
+
+    users.push(newUser);
+    saveUsersDB(users);
+
+    showAuthAlert("Account registered successfully! Signing you in...", "success");
+    setTimeout(() => {
+      authenticateUser(newUser);
+    }, 600);
+  });
+
+  // Sign Out Button
+  if (signOutBtn) {
+    signOutBtn.addEventListener("click", signOutUser);
+  }
+
+  // Admin View Switcher (for Super Admin auditing other roles)
+  const auditBtns = document.querySelectorAll("#adminAuditSwitcher .role-btn");
+  auditBtns.forEach(btn => {
     btn.addEventListener("click", () => {
       const targetRole = btn.getAttribute("data-role");
-      switchRole(targetRole);
+      switchAppView(targetRole);
     });
   });
 }
 
-function switchRole(role) {
-  currentRole = role;
+function showAuthAlert(msg, type) {
+  const alertEl = document.getElementById("authAlert");
+  alertEl.textContent = msg;
+  alertEl.className = `auth-alert ${type}`;
+  alertEl.style.display = "block";
+}
 
-  // Update role buttons
-  document.querySelectorAll(".role-btn").forEach(btn => {
+function hideAuthAlert() {
+  const alertEl = document.getElementById("authAlert");
+  alertEl.style.display = "none";
+}
+
+// Quick 1-Click Demo Logins
+window.quickLogin = function(role) {
+  const users = getUsersDB();
+  const user = users.find(u => u.role === role);
+  if (user) {
+    authenticateUser(user);
+  }
+};
+
+function authenticateUser(user) {
+  currentUser = user;
+  localStorage.setItem("RAILSAMIKSHA_AUTH_SESSION", JSON.stringify(user));
+
+  // Hide Auth Screen, Show App Screen
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("appScreen").style.display = "flex";
+
+  // Update Header Profile
+  document.getElementById("userAvatar").textContent = user.avatar;
+  document.getElementById("userNameDisplay").textContent = user.name;
+  document.getElementById("userRoleBadge").textContent = `${user.roleLabel} • ${user.division.split(',')[0]}`;
+
+  // Configure role access
+  const adminSwitcher = document.getElementById("adminAuditSwitcher");
+  if (user.role === "admin") {
+    adminSwitcher.style.display = "flex";
+  } else {
+    adminSwitcher.style.display = "none";
+  }
+
+  // Route to the authorized view
+  switchAppView(user.role);
+}
+
+function checkAuthSession() {
+  const storedSession = localStorage.getItem("RAILSAMIKSHA_AUTH_SESSION");
+  if (storedSession) {
+    try {
+      const user = JSON.parse(storedSession);
+      authenticateUser(user);
+      return;
+    } catch (e) {
+      localStorage.removeItem("RAILSAMIKSHA_AUTH_SESSION");
+    }
+  }
+
+  // Show Auth Screen
+  document.getElementById("authScreen").style.display = "flex";
+  document.getElementById("appScreen").style.display = "none";
+}
+
+function signOutUser() {
+  localStorage.removeItem("RAILSAMIKSHA_AUTH_SESSION");
+  currentUser = null;
+  document.getElementById("appScreen").style.display = "none";
+  document.getElementById("authScreen").style.display = "flex";
+  showAuthAlert("You have signed out of your session.", "success");
+}
+
+function switchAppView(role) {
+  activeViewRole = role;
+
+  // Update audit switcher active state if visible
+  document.querySelectorAll("#adminAuditSwitcher .role-btn").forEach(btn => {
     btn.classList.toggle("active", btn.getAttribute("data-role") === role);
   });
 
@@ -208,38 +450,36 @@ function switchRole(role) {
   const targetWs = document.getElementById(`${role}-workspace`);
   if (targetWs) targetWs.classList.add("active");
 
-  // Update navbar role badge and footer
-  const roleBadge = document.getElementById("roleBadge");
   const footerRole = document.getElementById("footerActiveRole");
   const bannerIcon = document.getElementById("roleBannerIcon");
   const bannerText = document.getElementById("roleBannerText");
 
   if (role === "admin") {
-    roleBadge.textContent = "Super Admin Mode";
-    roleBadge.className = "badge badge-cyan";
     footerRole.textContent = "Super Admin (HQ)";
     bannerIcon.textContent = "👑";
     bannerText.innerHTML = "<strong>Super Admin Executive Command:</strong> Full visibility into global flight surveys, live active patrols, central TMS CSV repository, and network-wide defect clearance metrics.";
     renderAdminView();
   } else if (role === "operator") {
-    roleBadge.textContent = "Drone Operator Mode";
-    roleBadge.className = "badge badge-purple";
     footerRole.textContent = "Field Drone Operator";
     bannerIcon.textContent = "🎮";
     bannerText.innerHTML = "<strong>Field Drone Operator Workspace:</strong> Review high-resolution 4K SAHI track orthophotos, verify AI defect bounding boxes, monitor live patrol flight feeds, and submit signed survey reports to the database.";
+    if (currentUser) {
+      document.getElementById("opPilotName").textContent = currentUser.name;
+    }
     renderOperatorView();
   } else if (role === "clearance") {
-    roleBadge.textContent = "Defect Clearance Mode";
-    roleBadge.className = "badge badge-green";
     footerRole.textContent = "P-Way Field Clearance Gang";
     bannerIcon.textContent = "🔧";
     bannerText.innerHTML = "<strong>P-Way Field Gang Remedial Portal:</strong> Locate georeferenced defects on track, execute required IRPWM remedial repairs (replacements/grinding/welds), and certify whole-section track safety clearance.";
+    if (currentUser && currentUser.role === "clearance") {
+      document.getElementById("clGangName").textContent = currentUser.name;
+    }
     renderClearanceView();
   }
 }
 
 // ============================================================================
-// 4. SUPER ADMIN PLATFORM LOGIC
+// 5. SUPER ADMIN PLATFORM LOGIC
 // ============================================================================
 
 function initAdminDashboard() {
@@ -279,7 +519,6 @@ function updateAdminKPIs() {
   document.getElementById("adminClearanceRatio").textContent = `${clearedDefects} / ${pendingDefects}`;
   document.getElementById("adminClearancePct").textContent = `${clearanceRate}% Divisional Clearance Rate`;
 
-  // Update Clearance counter badge
   const pendingSurveyCount = SURVEYS_DATABASE.filter(s => s.status === "SUBMITTED_FOR_CLEARANCE").length;
   const alertBadge = document.getElementById("clearanceAlertBadge");
   if (alertBadge) {
@@ -338,15 +577,13 @@ function initOrUpdateAdminMap() {
     adminMap.invalidateSize();
   }
 
-  // Clear layers
   adminCorridorLayers.forEach(l => adminMap.removeLayer(l));
   adminCorridorLayers = [];
 
-  // Plot Corridors
   SURVEYS_DATABASE.forEach(s => {
-    let color = "#10b981"; // Cleared Green
-    if (s.status === "IN_SURVEY") color = "#06b6d4"; // Active Cyan
-    if (s.status === "SUBMITTED_FOR_CLEARANCE") color = "#fbbf24"; // Amber
+    let color = "#10b981";
+    if (s.status === "IN_SURVEY") color = "#06b6d4";
+    if (s.status === "SUBMITTED_FOR_CLEARANCE") color = "#fbbf24";
 
     const poly = L.polyline(s.coordinates, {
       color: color,
@@ -365,7 +602,6 @@ function initOrUpdateAdminMap() {
 
     adminCorridorLayers.push(poly);
 
-    // If live drone survey, plot drone icon
     if (s.status === "IN_SURVEY") {
       const droneHead = s.coordinates[s.coordinates.length - 1];
       const droneMarker = L.circleMarker(droneHead, {
@@ -380,7 +616,6 @@ function initOrUpdateAdminMap() {
     }
   });
 
-  // Fit bounds to live survey
   const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
   if (liveSurvey) {
     adminMap.setView(liveSurvey.coordinates[1], 15);
@@ -388,7 +623,7 @@ function initOrUpdateAdminMap() {
 }
 
 // ============================================================================
-// 5. OPERATOR WORKSPACE LOGIC
+// 6. OPERATOR WORKSPACE LOGIC
 // ============================================================================
 
 function initOperatorWorkspace() {
@@ -432,7 +667,6 @@ function initStillCanvas() {
   else img.onload = resizeCanvas;
   window.addEventListener("resize", resizeCanvas);
 
-  // Zoom and Pan
   wrapper.addEventListener("wheel", (e) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 0.87;
@@ -472,7 +706,6 @@ function initStillCanvas() {
     applyCanvasTransform();
   });
 
-  // Controls
   const confSlider = document.getElementById("confSlider");
   const confVal = document.getElementById("confVal");
   confSlider.addEventListener("input", (e) => {
@@ -629,7 +862,7 @@ function initVideoPlayer() {
 }
 
 // ============================================================================
-// 6. DEFECT CLEARANCE PLATFORM LOGIC (P-WAY FIELD GANG)
+// 7. DEFECT CLEARANCE PLATFORM LOGIC (P-WAY FIELD GANG)
 // ============================================================================
 
 function initClearanceWorkspace() {
@@ -695,7 +928,7 @@ function renderClearancePunchlist() {
       </div>
       <div class="punch-action-bar">
         <span style="font-size: 11px; color: ${d.cleared ? '#34d399' : '#fbbf24'}; font-weight: 600;">
-          ${d.cleared ? `✓ Repaired by Gang 12 (${d.clearedAt || 'Just Now'})` : '● Pending Ground Repair'}
+          ${d.cleared ? `✓ Repaired (${d.clearedAt || 'Just Now'})` : '● Pending Ground Repair'}
         </span>
         <button class="punch-toggle-btn ${d.cleared ? 'cleared' : ''}" onclick="toggleDefectCleared('${d.id}')">
           ${d.cleared ? '✓ Cleared' : 'Mark Cleared'}
@@ -745,7 +978,7 @@ function certifySectionClearance() {
   liveSurvey.statusLabel = "✓ 100% Cleared";
   liveSurvey.statusClass = "badge-green";
 
-  alert("🛡️ TRACK SAFETY CERTIFIED!\n\nAll defects in Section Delhi-Mathura (KM 122.4 - 122.8) have been verified repaired by Gang 12.\nSuper Admin dashboard has been notified and updated.");
+  alert("🛡️ TRACK SAFETY CERTIFIED!\n\nAll defects in Section Delhi-Mathura (KM 122.4 - 122.8) have been verified repaired.\nSuper Admin dashboard has been notified and updated.");
 
   renderClearanceView();
   updateAdminKPIs();
@@ -761,7 +994,6 @@ function initOrUpdateClearanceMap() {
   if (!clearanceMap) {
     clearanceMap = L.map('clearanceMapContainer').setView([28.6148, 77.2096], 17);
 
-    // Esri World Imagery (Satellite HD)
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Esri Satellite',
       maxZoom: 19
@@ -790,7 +1022,7 @@ function initOrUpdateClearanceMap() {
 }
 
 // ============================================================================
-// 7. OPERATOR SURVEY SUBMISSION MODAL
+// 8. OPERATOR SURVEY SUBMISSION MODAL
 // ============================================================================
 
 function initModals() {
@@ -811,6 +1043,9 @@ function openSubmitModal() {
   const verifiedCount = liveSurvey.defects.filter(d => d.verified).length;
   document.getElementById("modalDefectsCount").textContent = `${verifiedCount} Verified Defects`;
   document.getElementById("modalTimestamp").textContent = new Date().toLocaleString();
+  if (currentUser) {
+    document.getElementById("modalPilotSign").textContent = `${currentUser.name} (${currentUser.division})`;
+  }
   document.getElementById("submitModal").style.display = "flex";
 }
 
@@ -824,14 +1059,17 @@ function submitSurveyToTMS() {
 
   document.getElementById("submitModal").style.display = "none";
 
-  alert("✅ SURVEY SUBMITTED TO TMS DATABASE!\n\nOfficial CSV dispatch generated and committed.\nField Gang 12 has been notified to execute defect clearance.");
+  alert("✅ SURVEY SUBMITTED TO TMS DATABASE!\n\nOfficial CSV dispatch generated and committed.\nField Clearance Team has been dispatched.");
 
-  // Switch to Clearance view so user can experience the flow!
-  switchRole("clearance");
+  if (currentUser && currentUser.role === "admin") {
+    switchAppView("clearance");
+  } else {
+    renderOperatorView();
+  }
 }
 
 // ============================================================================
-// 8. MASTER CSV EXPORT (INDIAN RAILWAYS TMS FORMAT)
+// 9. MASTER CSV EXPORT (INDIAN RAILWAYS TMS FORMAT)
 // ============================================================================
 
 window.exportSingleSurveyCSV = function(surveyId) {

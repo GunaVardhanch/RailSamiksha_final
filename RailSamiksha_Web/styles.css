@@ -1,4 +1,4 @@
-/* RailSamiksha AI — Aerospace Glassmorphism Dark UI & Enterprise RBAC */
+/* RailSamiksha AI — Aerospace Glassmorphism Dark UI & Enterprise RBAC with Auth */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
@@ -35,15 +35,240 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
 code, pre, .mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* App Header */
+/* ============================================================================ */
+/* AUTHENTICATION PORTAL STYLES (LOGIN & REGISTER)                              */
+/* ============================================================================ */
+
+.auth-wrapper {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 20%, #111d38 0%, #070b12 80%);
+  position: relative;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(13, 21, 39, 0.88);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(6, 182, 212, 0.15);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.auth-logo {
+  font-size: 36px;
+  margin-bottom: 8px;
+  display: inline-block;
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid var(--cyan-accent);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.auth-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.auth-tabs {
+  display: flex;
+  background: #090e1c;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  background: rgba(6, 182, 212, 0.2);
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.auth-alert {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-alert.error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid var(--red-critical);
+  color: #fca5a5;
+}
+
+.auth-alert.success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid var(--green-low);
+  color: #86efac;
+}
+
+.auth-form {
+  display: none;
+}
+
+.auth-form.active {
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  background: #090e1c;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  padding: 10px 12px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  border-color: var(--cyan-accent);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.25);
+}
+
+.grid-2-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.role-desc-text {
+  font-size: 11px;
+  color: #38bdf8;
+  display: block;
+  margin-top: 4px;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.demo-logins-box {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.demo-logins-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.demo-btns-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.demo-login-btn {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 6px;
+  color: #cbd5e1;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all 0.2s;
+}
+
+.demo-login-btn:hover {
+  border-color: var(--cyan-accent);
+  background: rgba(6, 182, 212, 0.15);
+  color: #fff;
+}
+
+.demo-login-btn span {
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* ============================================================================ */
+/* AUTHENTICATED USER HEADER & NAVBAR                                           */
+/* ============================================================================ */
+
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -95,6 +320,60 @@ code, pre, .mono {
 .brand-subtitle {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.user-avatar {
+  font-size: 14px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.user-role-badge {
+  font-size: 9px;
+  color: var(--cyan-accent);
+  font-weight: 600;
+}
+
+.sign-out-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sign-out-btn:hover {
+  background: #ef4444;
+  color: #fff;
 }
 
 /* Role Switcher in Navbar */
@@ -478,7 +757,7 @@ code, pre, .mono {
 
 .select-input {
   width: 100%;
-  background: #0f172a;
+  background: #090e1c;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   color: var(--text-main);
@@ -518,7 +797,6 @@ code, pre, .mono {
 
 /* Buttons */
 .btn-primary {
-  width: 100%;
   background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
   color: #fff;
   border: none;
