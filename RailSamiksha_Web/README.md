@@ -1,112 +1,112 @@
-# 🚆 RailSamiksha AI — Autonomous Aerial Railway Track Defect Inspection Platform (Web Edition)
+# 🚆 RailSamiksha AI — Enterprise RBAC Aerial Track Inspection Platform
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 ![Platform](https://img.shields.io/badge/Platform-Vercel%20Edge%20Network-000000?style=flat&logo=vercel)
 ![Vision Transformer](https://img.shields.io/badge/Architecture-RT--DETR--L-06b6d4?style=flat)
-![P-Way Compliance](https://img.shields.io/badge/Standards-Indian%20Railways%20IRPWM%20TMS-10b981?style=flat)
+![Security & RBAC](https://img.shields.io/badge/Access%20Control-3--Tier%20RBAC-8b5cf6?style=flat)
+![Standards](https://img.shields.io/badge/Compliance-Indian%20Railways%20IRPWM%20TMS-10b981?style=flat)
 
-RailSamiksha AI is an aerospace-grade web platform for autonomous aerial railway track defect inspection. It bridges state-of-the-art **RT-DETR-L (Real-Time DEtection TRansformer)** computer vision with real-world **Indian Railways Permanent Way (P-Way)** track maintenance operations.
+RailSamiksha AI is an enterprise-grade aerial railway defect inspection platform designed with a **3-Tier Role-Based Access Control (RBAC)** architecture mirroring Indian Railways operational hierarchies:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                      RAILSAMIKSHA ENTERPRISE RBAC ARCHITECTURE                         │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+
+    [ USER SELECTOR / ROLE-BASED ACCESS CONTROL (RBAC) ]
+    ├─ 👑 SUPER ADMIN (Chief Track Engineer - HQ)
+    ├─ 🎮 DRONE OPERATOR (Field Pilot & AI Inspector)
+    └─ 🔧 DEFECT CLEARANCE ENGINEER (P-Way Field Gang / Section Engineer)
+
+    ┌──────────────────────────────────────────────────────────────────────────────┐
+    │                        SHARED TMS CENTRAL STATE ENGINE                       │
+    │   Surveys DB | Live Telemetry Stream | Incident Ledgers | Clearance Audit    │
+    └──────────────────────────────────────┬───────────────────────────────────────┘
+                                           │
+         ┌─────────────────────────────────┼─────────────────────────────────┐
+         ▼                                 ▼                                 ▼
+   [ 🎮 OPERATOR ]                 [ 🔧 CLEARANCE GANG ]              [ 👑 SUPER ADMIN ]
+   • Live 4K SAHI Inspection      • View Assigned Survey Reports     • Executive Radar HUD
+   • Video Patrol & ByteTrack      • GPS Defect Geolocation Pinpoint  • Total Surveys (Done vs Live)
+   • BBox & Confidence Tuning      • Defect Punchlist Triage:         • Active Flight Corridor Stream
+   • Verify Defect Alert             [Pending] -> [In Progress] ->    • Central CSV/TMS Repository
+   • Click "Sign & Submit to DB"     [Repaired & Cleared]             • Live Clearance Status Monitor
+         │                         • Enter Gang ID & Work Notes       • Divisional Safety Scorecard
+         │ (Submits Survey)        • Click "Certify Section Cleared"         ▲
+         └─────────────────────────────────┬─────────────────────────────────┘
+                                           │ (Updates State)
+                                           └─────────────────────────────────┘
+```
 
 ---
 
-## ⚡ Key Capabilities
+## 👥 Three Specialized User Portals
 
-1. **4K SAHI Aerial Defect Inspection (Still Orthophotos)**:
-   - Evaluates high-resolution orthophoto slices with GSD down to **0.65 mm/px**.
-   - Interactive zoom & pan canvas with real-time bounding box toggling and category filters (*Fasteners, Rails, Sleepers*).
-   - Interactive defect inspector displaying **Chainage (KM)**, **RTK-GPS coordinates**, and official **IRPWM remedial action codes** (e.g. *Para 241: Emergency Track Block; Clamp Fishplates*).
+### 1. 👑 Super Admin Platform (Chief Track Engineer - Headquarters)
+* **Executive Divisional Radar**:
+  * Real-time metrics: Total Surveys Done, Active In-Flight Patrols, Total Identified Defects, and Divisional Clearance Ratio (%).
+* **Live Corridor GIS Fleet Map**:
+  * Visualizes surveyed corridors with color coding (Green: 100% Cleared, Amber: Pending Remediation, Pulsing Cyan: Active In-Flight Drone).
+* **Central TMS CSV Repository**:
+  * Master repository of all flight survey records.
+  * 1-click **Export Master CSV** compliant with Indian Railways Track Management System (TMS).
+* **Model Checkpoint Registry**:
+  * Side-by-side benchmark matrix of all 3 RT-DETR-L models (v3 Sanitized, v2 Canonical, v1 Baseline).
 
-2. **Live Flight Patrol Video Stream & ByteTrack HUD**:
-   - Stream telemetry synchronized to drone video timestamps.
-   - Monitors altitude AGL, drone velocity, camera gimbal pitch (-45°), and track chainage.
-   - 3-hit temporal confirmation filter to suppress transient false alarms.
+### 2. 🎮 Drone Operator Platform (Field Pilot & AI Inspector)
+* **4K SAHI Inspection Canvas**:
+  * High-resolution orthophoto slicing (GSD 0.65 mm/px).
+  * Interactive zoom, pan, and bounding box toggling.
+* **Drone Patrol Video Stream**:
+  * Real-time telemetry HUD updating altitude AGL, speed, gimbal pitch, and track chainage.
+* **Verification & Acceptance**:
+  * Pilot verifies each AI-detected bounding box (Confirm Defect or Mark False Alarm).
+* **"Accept & Submit Survey to TMS Database"**:
+  * Signs off the survey with pilot digital signature, creates official CSV record, and dispatches the work order to the Field Clearance Gang.
 
-3. **Multi-Layer Satellite GIS Corridor Map (Leaflet.js)**:
-   - High-definition satellite imagery (Esri World Imagery) and dark tactical layers.
-   - Real RTK-GPS flight paths and color-coded hazard markers (*Red: Critical, Yellow: Medium, Green: Low*).
-
-4. **Permanent Way (P-Way) TMS Maintenance Registry**:
-   - Real-time ledger of all detected track anomalies.
-   - 1-click **Export TMS CSV** compliant with Indian Railways Track Management System (TMS) data formats.
-
-5. **Multi-Model Checkpoint Registry**:
-   - Dynamic model switcher between **v3 Sanitized** (0.5% anomaly rate, peak Sleeper Precision 55.3%), **v2 Canonical-85** (50.74% mAP50), and **v1 Baseline Production** (53.75% mAP50).
+### 3. 🔧 Defect Clearance Platform (P-Way Field Gang / Section Engineer)
+* **Work Order Dispatch**:
+  * Accesses submitted surveys assigned to their maintenance section.
+* **Georeferenced Pinpoint Map**:
+  * Satellite view showing exact physical GPS coordinates and track chainage for walking inspection crews.
+* **Interactive Defect Clearance Punch-List**:
+  * Shows required Indian Railways remedial standard (*e.g. IRPWM Para 241: Clamp Fishplates & Replace Rail; Para 257: Replace Pandrol e-clips*).
+  * Toggle status: `Pending` ➔ `In Progress` ➔ `✓ Cleared / Repaired`.
+* **"Certify Section Defect Clearance Complete"**:
+  * Once all defects are marked repaired, unlocks the safety certificate sign-off.
+  * Instantly notifies Super Admin, updating the section to **100% Cleared**!
 
 ---
 
 ## 🚀 Instant Deployment to Vercel
 
-### Option 1: Import via Vercel Dashboard (Recommended)
-
-1. Push this repository to your GitHub account:
+1. Commit and push repository to GitHub:
    ```bash
    git add .
-   git commit -m "feat: complete RailSamiksha production stack and Vercel web frontend"
+   git commit -m "feat: implement 3-tier enterprise RBAC inspection platform"
    git push -u origin main
    ```
-2. Log into [vercel.com](https://vercel.com).
-3. Click **"Add New..."** → **"Project"** and select your GitHub repository.
-4. Under **"Root Directory"**, click **Edit** and select:
+2. Log into [vercel.com](https://vercel.com) and click **"Add New..."** → **"Project"**.
+3. Select your GitHub repository.
+4. Set **Root Directory** to:
    ```
    RailSamiksha_Web
    ```
-5. Click **"Deploy"**. Vercel will instantly build and deploy your edge inspection application in under 15 seconds!
-
-### Option 2: Deploy via Vercel CLI
-
-If you have Node.js and the Vercel CLI installed:
-```bash
-cd RailSamiksha_Web
-vercel
-```
+5. Click **"Deploy"**. Vercel will deploy your edge application in **under 15 seconds**!
 
 ---
 
 ## 💻 Local Preview
 
-To preview the web app locally on Windows without installing any dependencies:
-
-### Via Double-Click
-Double-click [`start_web_preview.bat`](file:///c:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/RailSamiksha_Web/start_web_preview.bat).
-
-### Via Python
-```bash
-cd RailSamiksha_Web
-python -m http.server 3000
-```
-Then open [http://localhost:3000](http://localhost:3000) in your web browser.
+Run locally on Windows with zero dependencies:
+* Double-click [`RailSamiksha_Web\start_web_preview.bat`](file:///c:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/RailSamiksha_Web/start_web_preview.bat), or
+* Run:
+  ```powershell
+  python -m http.server 3000 --directory RailSamiksha_Web
+  ```
+  and visit `http://localhost:3000`.
 
 ---
 
-## 📁 Web Project Structure
-
-```
-RailSamiksha_Web/
-├── index.html               # Semantic HTML5 aerospace glassmorphic UI
-├── styles.css               # Glassmorphic dark styling & responsive grid
-├── app.js                   # Interactive client-side engine (Canvas, Leaflet, TMS CSV)
-├── vercel.json              # Vercel Edge CDN headers, routing & caching rules
-├── package.json             # NPM metadata and preview scripts
-├── start_web_preview.bat    # Windows 1-click local preview launcher
-├── sample_data/             # Embedded sample flight clips and orthophotos
-│   ├── sample_track_image.jpg
-│   ├── track_fracture_sample.jpg
-│   ├── sample_track_flight.mp4
-│   └── broken_track_patrol.mp4
-└── README.md                # Deployment and documentation guide
-```
-
----
-
-## 🔬 RT-DETR Model Benchmark Summary
-
-| Model Checkpoint | Training Recipe | Test $mAP_{50}$ | Test $mAP_{50-95}$ | Latency (RTX A4000) | Anomaly Rate |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **RT-DETR-L v3 Sanitized** | 50 Epochs, AdamW, Clean Box Scale | **49.37%** | 29.32% | 13.3 ms | **0.5% (97.3% Cleaned)** |
-| **RT-DETR-L v2 Canonical-85** | 50 Epochs, AdamW, Albumentations CLAHE | **50.74%** | 32.48% | 13.5 ms | 19.5% |
-| **RT-DETR-L v1 Baseline** | Consolidated Run, SGD | **53.75%** | 33.10% | 13.4 ms | 19.5% |
-
----
-
-## 🛡️ License & Standards
-Developed for Indian Railways Track Inspection & Maintenance Operations. Adheres to **IRPWM (Indian Railways Permanent Way Manual)** safety protocols.
+## 🛡️ Railway Safety Compliance
+Designed to adhere to **Indian Railways Permanent Way Manual (IRPWM)** and **Track Management System (TMS)** safety inspection protocols.
