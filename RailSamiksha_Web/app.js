@@ -814,6 +814,8 @@ function initOperatorWorkspace() {
   }
 }
 
+let currentUploadedVideoFile = null;
+
 function initCustomUploads() {
   const customImgInput = document.getElementById("customImageInput");
   const customVidInput = document.getElementById("customVideoInput");
@@ -828,6 +830,7 @@ function initCustomUploads() {
         const objectUrl = URL.createObjectURL(file);
         imgEl.onload = () => {
           document.getElementById("resHudText").textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
+          imgEl.onload = () => drawBoundingBoxes();
           runModelInferencePipeline(file);
         };
         imgEl.src = objectUrl;
@@ -840,10 +843,11 @@ function initCustomUploads() {
     customVidInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (file) {
+        currentUploadedVideoFile = file;
         const url = URL.createObjectURL(file);
         vidEl.src = url;
         vidEl.play();
-        showToast("Custom Patrol Video Loaded", `${file.name} playing with live telemetry`, "success");
+        showToast("Custom Patrol Video Loaded", `${file.name} ready for ByteTrack inspection`, "success");
       }
     });
   }
@@ -979,7 +983,15 @@ function drawBoundingBoxes() {
 
   liveSurvey.defects.forEach(d => {
     if (!d.verified) return;
-    const [nx1, ny1, nx2, ny2] = d.box;
+    let [nx1, ny1, nx2, ny2] = d.box;
+    if (nx2 > 1.0 || ny2 > 1.0) {
+      const naturalW = img.naturalWidth || imgW || 1;
+      const naturalH = img.naturalHeight || imgH || 1;
+      nx1 /= naturalW;
+      ny1 /= naturalH;
+      nx2 /= naturalW;
+      ny2 /= naturalH;
+    }
     const x = imgLeft + nx1 * imgW;
     const y = imgTop + ny1 * imgH;
     const w = (nx2 - nx1) * imgW;
@@ -1062,12 +1074,19 @@ window.toggleOperatorVerification = function(defectId) {
 function initVideoPlayer() {
   const video = document.getElementById("patrolVideo");
   const videoSelect = document.getElementById("videoSelect");
-  if (!video || !videoSelect) return;
+  if (!video) return;
 
-  videoSelect.addEventListener("change", (e) => {
-    video.src = e.target.value;
-    video.play();
-  });
+  if (videoSelect) {
+    videoSelect.addEventListener("change", (e) => {
+      video.src = e.target.value;
+      video.play();
+    });
+  }
+
+  const runVidBtn = document.getElementById("runVideoInspectBtn");
+  if (runVidBtn) {
+    runVidBtn.addEventListener("click", runVideoInspection);
+  }
 
   video.addEventListener("timeupdate", () => {
     const cur = video.currentTime;
@@ -1731,7 +1750,7 @@ async function runModelInferencePipeline(customFile = null) {
   const targetFile = customFile || currentUploadedFile;
 
   if (BACKEND_CONFIG.isOnline) {
-    showToast("Production AI Pipeline Active", "Running SAHI patch slicing + RT-DETR-L on GPU...", "warning");
+    showToast("Production AI Pipeline Active", "Running SAHI patch slicing + RT-DETR-L on GPU...", "info");
 
     try {
       let body;
@@ -1745,9 +1764,12 @@ async function runModelInferencePipeline(customFile = null) {
         formData.append("use_sahi", "true");
         body = formData;
       } else {
-        // Send sample_name for zero-loss server-side loading from Railway Production App samples
+        const sampleName = (currentScenarioKey === "scenario_fracture") 
+          ? "track_fracture_sample.jpg" 
+          : "sample_track_image.jpg";
+
         body = JSON.stringify({
-          sample_name: "sample_track_image.jpg",
+          sample_name: sampleName,
           confidence: confVal,
           model: modelChoice,
           use_sahi: true
@@ -1788,6 +1810,11 @@ async function runModelInferencePipeline(customFile = null) {
           };
         });
 
+        // Render OpenCV Annotated Image directly if returned by backend (100% parity with Production Streamlit App)
+        if (data.annotated_preview_url && stillImg) {
+          stillImg.src = data.annotated_preview_url;
+        }
+
         // Render high-res Defect Crop Gallery (identical to Railway Production App)
         const gallery = document.getElementById("defectCropGallery");
         if (gallery) {
@@ -1806,8 +1833,8 @@ async function runModelInferencePipeline(customFile = null) {
 
         drawBoundingBoxes();
         renderOperatorDefectsList();
-        updateSeverityStats();
-        updateAdminMetrics();
+        updateAdminKPIs();
+        updateAnalyticsWidgets();
 
         const resHud = document.getElementById("resHudText");
         if (resHud) resHud.textContent = `${stillImg.naturalWidth || 1920} × ${stillImg.naturalHeight || 1080} px`;
@@ -1821,15 +1848,127 @@ async function runModelInferencePipeline(customFile = null) {
       }
     } catch (e) {
       console.warn("Backend inference error:", e);
-      showToast("Backend Notice", `Inference fallback: ${e.message}`, "warning");
+      showToast("Backend Notice", `Inference Notice: ${e.message}`, "warning");
+      return;
     }
   }
 
-  // Fallback simulation
-  showToast("SAHI 4K Slicer Executing", "Computing high-resolution image slices...", "warning");
+  // Fallback simulation ONLY if backend server is unreachable
+  showToast("Client Fallback Engine", "Simulating offline inspection view...", "warning");
   setTimeout(() => {
     drawBoundingBoxes();
     renderOperatorDefectsList();
-    showToast("Inference Complete", "Detected verified defects via client engine", "success");
+    updateAdminKPIs();
+    updateAnalyticsWidgets();
+    showToast("Inference Complete", "Loaded local survey verification data", "info");
   }, 400);
+}
+
+function updateSeverityStats() {
+  updateAnalyticsWidgets();
+  updateAdminKPIs();
+}
+
+function updateAdminMetrics() {
+  updateAdminKPIs();
+  updateAnalyticsWidgets();
+}
+
+async function runVideoInspection() {
+  const videoSelect = document.getElementById("videoSelect");
+  const statusBadge = document.getElementById("videoTrackerStatus");
+  const trackletsCountEl = document.getElementById("videoConfirmedTrackletsCount");
+  const falseFlashesEl = document.getElementById("videoFalseFlashesCount");
+  const eventsListEl = document.getElementById("videoConfirmedEventsList");
+  const keyframesGallery = document.getElementById("videoKeyframeGallery");
+
+  if (statusBadge) statusBadge.textContent = "Processing Stream...";
+  showToast("ByteTrack Patrol Inspection", "Extracting video frames and running RT-DETR-L + ByteTrack tracker on GPU...", "info");
+
+  try {
+    let body;
+    let headers = {};
+
+    if (currentUploadedVideoFile instanceof File) {
+      const formData = new FormData();
+      formData.append("file", currentUploadedVideoFile);
+      formData.append("stride", "2");
+      formData.append("confidence", "0.20");
+      formData.append("max_frames", "90");
+      body = formData;
+    } else {
+      const selectedVal = videoSelect ? videoSelect.value : "sample_data/broken_track_patrol.mp4";
+      const sampleName = selectedVal.split("/").pop();
+      body = JSON.stringify({
+        sample_name: sampleName,
+        stride: 2,
+        confidence: 0.20,
+        max_frames: 90
+      });
+      headers["Content-Type"] = "application/json";
+    }
+
+    const res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/infer/video`, {
+      method: "POST",
+      headers: headers,
+      body: body
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data.success) {
+      if (trackletsCountEl) trackletsCountEl.textContent = data.confirmed_tracklets || 0;
+      if (falseFlashesEl) falseFlashesEl.textContent = data.false_flashes_blocked || 0;
+      if (statusBadge) statusBadge.textContent = `${data.confirmed_tracklets} Tracklets Confirmed`;
+
+      if (eventsListEl) {
+        if (Array.isArray(data.verified_incidents) && data.verified_incidents.length > 0) {
+          eventsListEl.innerHTML = data.verified_incidents.map(inc => {
+            const sevClass = inc.severity === "CRITICAL" ? "sev-high" : (inc.severity === "MEDIUM" ? "sev-med" : "sev-low");
+            return `
+              <div class="event-item" style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-weight: 700; color: #fff; font-size: 12px;">Tracklet #${inc.track_id}: ${inc.class_name}</span>
+                  <span class="sev-pill ${sevClass}">${inc.severity}</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">
+                  Peak Conf: <strong style="color: var(--cyan-accent);">${inc.peak_confidence}</strong> • Visible across ${inc.frames_visible} frames • ${inc.chainage}
+                </div>
+                <div style="font-size: 10px; color: #94a3b8; font-style: italic;">
+                  ${inc.action}
+                </div>
+              </div>
+            `;
+          }).join("");
+        } else {
+          eventsListEl.innerHTML = '<div style="font-size: 11px; color: #34d399; padding: 8px; text-align: center;">✓ Clean patrol run. 0 defects persisted through temporal filter.</div>';
+        }
+      }
+
+      // Render Keyframe gallery
+      if (keyframesGallery) {
+        if (Array.isArray(data.keyframes) && data.keyframes.length > 0) {
+          keyframesGallery.innerHTML = data.keyframes.map(kf => `
+            <div style="background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; text-align: center;">
+              <img src="${kf.preview_url}" style="width: 100%; height: 55px; object-fit: cover; border-radius: 4px;" alt="Frame ${kf.frame_idx}">
+              <div style="font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 2px;">Frame ${kf.frame_idx} (${kf.detections_count} dets)</div>
+            </div>
+          `).join("");
+        } else {
+          keyframesGallery.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 6px;">No keyframes captured.</div>';
+        }
+      }
+
+      showToast(
+        "ByteTrack Patrol Inspection Complete",
+        `Processed ${data.inspected_frames} frames in ${data.inference_time_ms}ms. Confirmed ${data.confirmed_tracklets} tracklets (${data.false_flashes_blocked} transient flashes eliminated).`,
+        "success"
+      );
+    }
+  } catch (err) {
+    console.error("Video inference error:", err);
+    if (statusBadge) statusBadge.textContent = "Error";
+    showToast("Video Inference Notice", `Could not complete server video inference: ${err.message}`, "warning");
+  }
 }

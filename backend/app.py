@@ -37,7 +37,7 @@ from database.db_manager import (
     DB_PATH,
     SCHEMA_PATH
 )
-from backend.inference import get_detector, MODEL_REGISTRY
+from backend.inference import get_detector, MODEL_REGISTRY, PROD_APP_DIR
 
 WEB_DIR = ROOT_DIR / "RailSamiksha_Web"
 
@@ -246,9 +246,80 @@ async def api_infer_image(request):
         import traceback
         traceback.print_exc()
         return JSONResponse({"success": False, "error": f"Inference error: {str(e)}"}, status_code=500)
+
+async def api_infer_video(request):
+    """
+    Patrol Video Inspection with ByteTrack Temporal Deduplication.
+    Accepts:
+      - multipart/form-data: 'file' (custom mp4/mov video) or 'sample_name'
+      - application/json: 'sample_name' (e.g. 'broken_track_patrol.mp4' or 'sample_track_flight.mp4')
+      - optional 'stride' (default 2), 'confidence' (default 0.20), 'max_frames' (default 90)
+    """
+    video_bytes = None
+    video_path = None
+    conf_threshold = 0.20
+    stride = 2
+    max_frames = 90
+    model_choice = "deployed_prod"
+
+    content_type = request.headers.get("content-type", "")
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        uploaded_file = form.get("file") or form.get("video")
+        sample_name = form.get("sample_name", "")
+        conf_threshold = float(form.get("confidence", 0.20))
+        stride = int(form.get("stride", 2))
+        max_frames = int(form.get("max_frames", 90))
+        model_choice = form.get("model", "deployed_prod")
+
+        if uploaded_file and hasattr(uploaded_file, "read"):
+            video_bytes = await uploaded_file.read()
+        elif sample_name:
+            # Check production app samples or web sample_data
+            p1 = PROD_APP_DIR / "samples" / sample_name
+            p2 = WEB_DIR / "sample_data" / sample_name
+            if p1.exists():
+                video_path = str(p1)
+            elif p2.exists():
+                video_path = str(p2)
+
+    elif "application/json" in content_type:
+        try:
+            body = await request.json()
+            sample_name = body.get("sample_name", "")
+            conf_threshold = float(body.get("confidence", 0.20))
+            stride = int(body.get("stride", 2))
+            max_frames = int(body.get("max_frames", 90))
+            model_choice = body.get("model", "deployed_prod")
+
+            if sample_name:
+                p1 = PROD_APP_DIR / "samples" / sample_name
+                p2 = WEB_DIR / "sample_data" / sample_name
+                if p1.exists():
+                    video_path = str(p1)
+                elif p2.exists():
+                    video_path = str(p2)
+        except Exception as e:
+            return JSONResponse({"success": False, "error": f"Invalid JSON: {str(e)}"}, status_code=400)
+
+    try:
+        detector = get_detector()
+        if model_choice and model_choice in MODEL_REGISTRY:
+            detector.set_model(model_choice)
+
+        result = detector.predict_video(
+            video_bytes=video_bytes,
+            video_path=video_path,
+            conf_threshold=conf_threshold,
+            stride=stride,
+            max_frames=max_frames
+        )
+        return JSONResponse(result)
+    except Exception as e:
         import traceback
         traceback.print_exc()
-        return JSONResponse({"success": False, "error": f"Inference error: {str(e)}"}, status_code=500)
+        return JSONResponse({"success": False, "error": f"Video inference error: {str(e)}"}, status_code=500)
 
 async def api_get_csv_report(request):
     """Generates and returns an Indian Railways TMS-compliant CSV file."""
@@ -313,6 +384,7 @@ routes = [
     
     # AI RT-DETR-L Real-Time Inference (with SAHI)
     Route("/api/infer/image", api_infer_image, methods=["POST"]),
+    Route("/api/infer/video", api_infer_video, methods=["POST"]),
     
     # TMS CSV Reports
     Route("/api/reports/csv", api_get_csv_report, methods=["GET"]),

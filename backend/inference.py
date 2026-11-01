@@ -193,6 +193,119 @@ class ProductionDefectDetector:
             "annotated_preview_url": annotated_b64
         }
 
+    def predict_video(
+        self,
+        video_bytes: Optional[bytes] = None,
+        video_path: Optional[str] = None,
+        conf_threshold: float = 0.20,
+        stride: int = 2,
+        max_frames: int = 90
+    ) -> Dict[str, Any]:
+        """
+        Runs ByteTrack temporal tracking on video frames, matching RailSamiksha_Production_App.
+        """
+        import os
+        import tempfile
+
+        t_start = time.perf_counter()
+        self.pipeline.set_confidence(conf_threshold)
+        self.pipeline.reset_tracker()
+
+        temp_path = None
+        if video_bytes:
+            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+            tfile.write(video_bytes)
+            tfile.close()
+            temp_path = tfile.name
+            path_to_open = temp_path
+        elif video_path:
+            path_to_open = video_path
+        else:
+            default_vid = PROD_APP_DIR / "samples" / "Broken_Track _and_ fastner.mp4"
+            if not default_vid.exists():
+                default_vid = PROD_APP_DIR / "samples" / "sample_track_flight.mp4"
+            path_to_open = str(default_vid)
+
+        cap = cv2.VideoCapture(path_to_open)
+        if not cap.isOpened():
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise ValueError(f"Could not open video source: {path_to_open}")
+
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_idx = 0
+        inspected_count = 0
+        keyframes = []
+        raw_detections_count = 0
+
+        try:
+            while cap.isOpened() and frame_idx < max_frames:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frame_idx += 1
+                if frame_idx % stride != 0:
+                    continue
+
+                inspected_count += 1
+                res = self.pipeline.process_video_frame(frame, frame_idx)
+                raw_detections_count += len(res.get("detections", []))
+
+                # Save keyframes with active defect boxes
+                if len(res.get("detections", [])) > 0 and len(keyframes) < 4:
+                    annotated = res.get("annotated_frame")
+                    if annotated is not None:
+                        ok, buf = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                        if ok:
+                            b64 = f"data:image/jpeg;base64,{base64.b64encode(buf).decode('utf-8')}"
+                            keyframes.append({
+                                "frame_idx": frame_idx,
+                                "detections_count": len(res["detections"]),
+                                "preview_url": b64
+                            })
+        finally:
+            cap.release()
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+
+        verified = self.pipeline.tracker.get_verified_incidents()
+        formatted_incidents = []
+        for v in verified:
+            cat = v["Defect Category"]
+            action = IRPWM_ACTIONS.get(cat, "IRPWM standard track inspection and repair")
+            formatted_incidents.append({
+                "track_id": v["Track ID"],
+                "class_name": cat,
+                "severity": v["Severity"],
+                "peak_confidence": v["Peak Confidence"],
+                "frames_visible": v["Frames Visible"],
+                "start_frame": v["Start Frame"],
+                "last_frame": v["End Frame"],
+                "latitude": v["Latitude"],
+                "longitude": v["Longitude"],
+                "chainage": f"KM {122.400 + (v['Track ID'] * 0.015):.3f}",
+                "action": action
+            })
+
+        elapsed_ms = round((time.perf_counter() - t_start) * 1000, 1)
+        false_flashes = max(0, raw_detections_count - len(formatted_incidents))
+
+        return {
+            "success": True,
+            "total_frames": total_frames,
+            "inspected_frames": inspected_count,
+            "stride": stride,
+            "inference_time_ms": elapsed_ms,
+            "device": self.device,
+            "confirmed_tracklets": len(formatted_incidents),
+            "false_flashes_blocked": false_flashes,
+            "verified_incidents": formatted_incidents,
+            "keyframes": keyframes
+        }
+
 _detector_singleton: Optional[ProductionDefectDetector] = None
 
 def get_detector() -> ProductionDefectDetector:

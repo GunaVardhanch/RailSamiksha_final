@@ -636,42 +636,45 @@
                 <label class="control-label">Patrol Video Feed or Custom File</label>
                 <div style="display: flex; gap: 8px;">
                   <select id="videoSelect" class="select-input" style="flex: 2;">
+                    <option value="sample_data/broken_track_patrol.mp4" selected>Broken Track & Pandrol Defect Patrol (High Anomaly)</option>
                     <option value="sample_data/sample_track_flight.mp4">Corridor Survey Flight 01 (Ballast & Ties)</option>
-                    <option value="sample_data/broken_track_patrol.mp4">Broken Track & Pandrol Defect Patrol Clip</option>
+                    <option value="sample_data/ballast_washout.mp4">Ballast Washout & Erosion Flight</option>
+                    <option value="sample_data/defective_fastener.mp4">Defective Fastener Corridor Patrol</option>
                   </select>
                   <label class="btn-secondary" style="flex: 1; text-align: center; cursor: pointer; padding: 8px 6px; font-size: 11px;">
                     🎥 Upload Video
                     <input type="file" id="customVideoInput" accept="video/*" style="display: none;">
                   </label>
                 </div>
+                <button id="runVideoInspectBtn" class="btn-primary" style="width: 100%; margin-top: 10px;">
+                  ▶️ Launch ByteTrack Video AI Inspection
+                </button>
               </div>
 
               <div class="metrics-row" style="margin-top: 14px;">
                 <div class="metric-card">
                   <span class="metric-label">Confirmed Tracklets</span>
-                  <span class="metric-value">2</span>
+                  <span class="metric-value" id="videoConfirmedTrackletsCount">0</span>
                 </div>
                 <div class="metric-card">
                   <span class="metric-label">False Flashes Blocked</span>
-                  <span class="metric-value">14</span>
+                  <span class="metric-value" id="videoFalseFlashesCount">0</span>
                 </div>
               </div>
 
               <div style="margin-top: 16px;">
-                <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">ByteTrack Confirmed Events</h4>
-                <div class="event-item" style="margin-bottom: 8px;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-weight: 600; color: #f87171;">Tracklet #14: Damaged Fastener</span>
-                    <span class="sev-pill sev-med">MEDIUM</span>
-                  </div>
-                  <div style="color: var(--text-muted); font-size: 11px;">Observed across 18 consecutive frames • Chainage KM 122.415</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h4 style="font-size: 13px; color: var(--text-muted); margin: 0;">ByteTrack Confirmed Events</h4>
+                  <span class="badge badge-purple" id="videoTrackerStatus">Ready to Scan</span>
                 </div>
-                <div class="event-item">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-weight: 600; color: #34d399;">Tracklet #22: Rail Wear (Gauge Corner)</span>
-                    <span class="sev-pill sev-low">LOW</span>
+                <div id="videoConfirmedEventsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+                  <div style="font-size: 11px; color: var(--text-muted); padding: 8px; text-align: center;">Click 'Launch ByteTrack Video AI Inspection' to process the drone stream.</div>
+                </div>
+                <div style="margin-top: 12px;">
+                  <h4 style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">🎞️ ByteTrack Verified Keyframes</h4>
+                  <div id="videoKeyframeGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; max-height: 120px; overflow-y: auto;">
+                    <!-- Populated dynamically with keyframe images -->
                   </div>
-                  <div style="color: var(--text-muted); font-size: 11px;">Observed across 32 consecutive frames • Chainage KM 122.400</div>
                 </div>
               </div>
             </div>
