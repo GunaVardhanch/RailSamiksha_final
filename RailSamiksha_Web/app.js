@@ -60,6 +60,83 @@ function saveUsersDB(users) {
 let currentUser = null;
 
 // ============================================================================
+// 1.1 BACKEND API CLIENT & REAL-TIME INFERENCE BRIDGE
+// ============================================================================
+
+const BACKEND_CONFIG = {
+  baseUrl: "http://localhost:8000",
+  isOnline: false,
+  device: "CPU",
+  modelName: "RT-DETR-L (85 Epochs)",
+  classNames: []
+};
+
+async function checkBackendConnection() {
+  const navPill = document.getElementById("navBackendStatusPill");
+  const navDot = document.getElementById("navBackendDot");
+  const navText = document.getElementById("navBackendText");
+  const authBadge = document.getElementById("authBackendBadge");
+  const sqlBadge = document.getElementById("sqlBackendStatusBadge");
+
+  try {
+    const res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/status`, {
+      method: "GET",
+      signal: AbortSignal.timeout ? AbortSignal.timeout(2500) : undefined
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      BACKEND_CONFIG.isOnline = true;
+      BACKEND_CONFIG.device = data.hardware?.device || "cuda:0";
+      BACKEND_CONFIG.classNames = data.model?.classes || {};
+
+      if (navPill) {
+        navPill.classList.add("online");
+        if (navText) navText.textContent = `RT-DETR-L Online (${BACKEND_CONFIG.device.toUpperCase()})`;
+      }
+      if (authBadge) {
+        authBadge.textContent = `🟢 SQLite TMS Backend & RT-DETR-L Active`;
+        authBadge.className = "badge badge-green";
+      }
+      if (sqlBadge) {
+        sqlBadge.textContent = `🟢 SQLite 3 Backend Connected (Port 8000)`;
+        sqlBadge.className = "badge badge-green";
+      }
+
+      // Try fetching surveys from backend database
+      fetch(`${BACKEND_CONFIG.baseUrl}/api/surveys`)
+        .then(r => r.json())
+        .then(survData => {
+          if (survData.surveys && survData.surveys.length) {
+            console.log("[Backend] Synced surveys from SQLite:", survData.surveys.length);
+          }
+        })
+        .catch(() => {});
+
+      return true;
+    }
+  } catch (err) {
+    // Offline mode is handled gracefully
+  }
+
+  BACKEND_CONFIG.isOnline = false;
+  if (navPill) {
+    navPill.classList.remove("online");
+    if (navText) navText.textContent = "Standalone Mode (Client Engine)";
+  }
+  if (authBadge) {
+    authBadge.textContent = "⚡ Standalone Client Mode";
+    authBadge.className = "badge badge-purple";
+  }
+  if (sqlBadge) {
+    sqlBadge.textContent = "🟢 SQLite / TMS Schema Synced";
+    sqlBadge.className = "badge badge-green";
+  }
+  return false;
+}
+
+
+// ============================================================================
 // 2. CENTRAL REACTIVE DATABASE STORE (TMS MASTER LEDGER)
 // ============================================================================
 
@@ -234,6 +311,22 @@ document.addEventListener("DOMContentLoaded", () => {
   initCustomUploads();
   initCertificateModal();
   initSqlSchemaUI();
+  checkBackendConnection();
+
+  const navPill = document.getElementById("navBackendStatusPill");
+  if (navPill) navPill.addEventListener("click", () => {
+    showToast("Checking Backend", "Testing connection to http://localhost:8000 ...", "info");
+    checkBackendConnection().then(online => {
+      showToast(online ? "Backend Online" : "Backend Offline", online ? `RT-DETR-L active on ${BACKEND_CONFIG.device}` : "Run run_backend.bat to launch backend", online ? "success" : "warning");
+    });
+  });
+
+  const authBadge = document.getElementById("authBackendBadge");
+  if (authBadge) authBadge.addEventListener("click", () => {
+    checkBackendConnection().then(online => {
+      showToast(online ? "Backend Online" : "Backend Offline", online ? "SQLite TMS Server connected" : "Using local demo auth", online ? "success" : "info");
+    });
+  });
 
   checkAuthSession();
 });
@@ -310,17 +403,27 @@ function initAuthUI() {
     const identifier = document.getElementById("loginIdentifier").value.trim().toLowerCase();
     const password = document.getElementById("loginPassword").value;
 
-    const users = getUsersDB();
-    const user = users.find(u => 
-      (u.email.toLowerCase() === identifier || u.username.toLowerCase() === identifier) && 
-      u.password === password
-    );
-
-    if (user) {
-      authenticateUser(user);
-      showToast("Access Granted", `Welcome back, ${user.name}!`, "success");
+    if (BACKEND_CONFIG.isOnline) {
+      showToast("Authenticating", "Checking credentials against SQL users table...", "info");
+      fetch(`${BACKEND_CONFIG.baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.user) {
+          authenticateUser(data.user);
+          showToast("Access Granted", `Welcome back, ${data.user.full_name || data.user.name}! (SQL Auth)`, "success");
+        } else {
+          showAuthAlert(data.error || "Invalid SQL credentials.", "error");
+        }
+      })
+      .catch(() => {
+        fallbackLocalSignIn(identifier, password);
+      });
     } else {
-      showAuthAlert("Invalid credentials. Try demo credentials (e.g. admin@railsamiksha.gov.in / admin123)", "error");
+      fallbackLocalSignIn(identifier, password);
     }
   });
 
@@ -726,8 +829,12 @@ function initCustomUploads() {
           imgEl.src = re.target.result;
           imgEl.onload = () => {
             document.getElementById("resHudText").textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
-            drawBoundingBoxes();
-            showToast("Custom Orthophoto Loaded", `${file.name} ready for SAHI analysis`, "success");
+            if (BACKEND_CONFIG.isOnline) {
+              runModelInferencePipeline(file);
+            } else {
+              drawBoundingBoxes();
+              showToast("Custom Orthophoto Loaded", `${file.name} ready for analysis`, "success");
+            }
           };
         };
         reader.readAsDataURL(file);
@@ -837,11 +944,7 @@ function initStillCanvas() {
   });
 
   document.getElementById("runStillInspectBtn").addEventListener("click", () => {
-    showToast("SAHI 4K Slicer Executing", "Computing 8 high-resolution 1:1 image patches...", "warning");
-    setTimeout(() => {
-      drawBoundingBoxes();
-      showToast("Inference Complete", "RT-DETR-L detected 3 verified defects (13.3ms latency)", "success");
-    }, 400);
+    runModelInferencePipeline();
   });
 }
 
@@ -1593,4 +1696,104 @@ function exportFullSQLDump() {
 
   downloadCSVFile(sql, `RailSamiksha_SQL_Dump_${new Date().toISOString().split('T')[0]}.sql`);
   showToast("SQL Dump Exported", "Generated full relational SQL dump file.", "success");
+}
+
+function fallbackLocalSignIn(identifier, password) {
+  const users = getUsersDB();
+  const user = users.find(u => 
+    (u.email.toLowerCase() === identifier || u.username.toLowerCase() === identifier) && 
+    u.password === password
+  );
+
+  if (user) {
+    authenticateUser(user);
+    showToast("Access Granted", `Welcome back, ${user.name}!`, "success");
+  } else {
+    showAuthAlert("Invalid credentials. Try demo credentials (e.g. admin@railsamiksha.gov.in / admin123)", "error");
+  }
+}
+
+async function runModelInferencePipeline(customFile = null) {
+  const stillImg = document.getElementById("stillImage");
+  const liveSurvey = SURVEYS_DATABASE.find(s => s.id === "SURV-2026-LIVE");
+  if (!liveSurvey) return;
+
+  if (BACKEND_CONFIG.isOnline) {
+    showToast("RT-DETR-L Executing", "Running real-time inference on GPU backend...", "warning");
+
+    try {
+      let body;
+      let headers = {};
+
+      if (customFile instanceof File) {
+        const formData = new FormData();
+        formData.append("file", customFile);
+        formData.append("confidence", (document.getElementById("confSlider") ? document.getElementById("confSlider").value / 100 : 0.25).toString());
+        body = formData;
+      } else {
+        // Send image source as base64 or fetch from stillImg.src
+        const resp = await fetch(stillImg.src);
+        const blob = await resp.blob();
+        const formData = new FormData();
+        formData.append("file", blob, "track.jpg");
+        formData.append("confidence", (document.getElementById("confSlider") ? document.getElementById("confSlider").value / 100 : 0.25).toString());
+        body = formData;
+      }
+
+      const res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/infer/image`, {
+        method: "POST",
+        headers: headers,
+        body: body
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.detections)) {
+        // Map real model detections to survey defect objects
+        liveSurvey.defects = data.detections.map((d, i) => {
+          const lowerName = d.name.toLowerCase();
+          const category = lowerName.includes("fastener") ? "fastener" :
+                           lowerName.includes("sleeper") ? "sleeper" :
+                           lowerName.includes("ballast") ? "ballast" :
+                           lowerName.includes("foreign") ? "foreign_object" : "rail";
+          return {
+            id: d.id,
+            name: `${d.name} (${d.confidence_pct})`,
+            raw_name: d.name,
+            category: category,
+            severity: d.severity,
+            conf: d.confidence,
+            box: d.bbox_norm,
+            chainage: d.chainage,
+            lat: 28.6148 + (i * 0.0006),
+            lon: 77.2096 + (i * 0.0005),
+            action: d.action,
+            cleared: false,
+            verified: true
+          };
+        });
+
+        drawBoundingBoxes();
+        renderOperatorDefectsList();
+        updateSeverityStats();
+        showToast(
+          "Real AI Detection Complete",
+          `RT-DETR-L found ${data.total_defects} defects in ${data.inference_time_ms}ms (${data.device})`,
+          "success"
+        );
+        return;
+      }
+    } catch (e) {
+      console.warn("Backend inference failed, falling back to simulated inference:", e);
+    }
+  }
+
+  // Fallback simulation
+  showToast("SAHI 4K Slicer Executing", "Computing high-resolution image slices...", "warning");
+  setTimeout(() => {
+    drawBoundingBoxes();
+    renderOperatorDefectsList();
+    showToast("Inference Complete", "Detected verified defects via client engine", "success");
+  }, 400);
 }

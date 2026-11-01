@@ -35,6 +35,11 @@
 
       <!-- Auth Error / Success Alert -->
       <div id="authAlert" class="auth-alert" style="display: none;"></div>
+      <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+        <span id="authBackendBadge" class="badge badge-purple" style="font-size: 10px; cursor: pointer;" title="Checks RT-DETR-L & SQLite TMS Server">
+          ⚡ Backend: Checking...
+        </span>
+      </div>
 
       <!-- SIGN IN FORM -->
       <form id="signInForm" class="auth-form active">
@@ -165,6 +170,12 @@
       </div>
 
       <!-- Authenticated User Profile Chip & Sign Out -->
+            <!-- Backend Connection Status Pill -->
+      <div class="backend-status-pill" id="navBackendStatusPill" title="Click to test RT-DETR-L backend connection">
+        <span class="backend-dot" id="navBackendDot"></span>
+        <span id="navBackendText">Checking Backend...</span>
+      </div>
+
       <div class="user-profile-header">
         <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light / Dark Mode">
           <span id="themeIcon">☀️</span>

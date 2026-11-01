@@ -133,6 +133,53 @@ code, pre, .mono {
   color: var(--text-main);
 }
 
+
+/* Backend Connection Status Badge */
+.backend-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-pill);
+  border: 1px solid var(--border-color);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backend-status-pill:hover {
+  border-color: var(--primary-accent);
+}
+
+.backend-status-pill.online {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: var(--green-low-bg);
+  color: var(--green-low-text);
+}
+
+.backend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+  display: inline-block;
+}
+
+.backend-status-pill.online .backend-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.92); opacity: 0.8; }
+  50% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(0.92); opacity: 0.8; }
+}
+
 /* Theme Toggle Button */
 .theme-toggle-btn {
   background: var(--bg-pill);
