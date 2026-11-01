@@ -1,0 +1,13 @@
+SavePoint: Day 5 Consolidated Baseline
+Created: 2026-10-26
+Model: RT-DETR-L (32M parameters)
+Resolution: 640x640
+Metrics (Held-Out Test Split):
+  - mAP50: 53.75%
+  - Precision: 61.64%
+  - Recall: 54.12%
+  - mAP50-95: 31.22%
+Files:
+  - rtdetr_consolidated_run_best.pt (66.25 MB)
+  - rtdetr_consolidated_run_best.onnx (62.90 MB)
+  - pipeline_config.yaml

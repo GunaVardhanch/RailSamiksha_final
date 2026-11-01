@@ -1,0 +1,15 @@
+path: C:/Users/Administrator/Desktop/RailSamiksha_Drone_defect_detection_Project/Dataset_consolidated
+train: train/images
+val: valid/images
+test: test/images
+nc: 9
+names:
+  0: Ballast Defect
+  1: Damaged Fastener
+  2: Foreign Objects
+  3: Missing Fastener
+  4: Rail Crack
+  5: Rail Joint Damage
+  6: Rail Misalignment
+  7: Rail Wear
+  8: Sleeper Defect

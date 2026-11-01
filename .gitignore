@@ -1,0 +1,45 @@
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Large Training Datasets (Multi-Gigabytes)
+data
+Dataset_pre/
+Dataset_tiled/
+Dataset_consolidated/
+Dataset_consolidated_clean/
+Dataset_tiled_v3/
+Railway_defect_dataset_1200/
+*.part
+*.cache
+
+# Heavy Training Runs
+runs/
+*.log
+scratch/
+
+# IDE & OS Metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Model weights exclusions (allow release weights & production app weights)
+*.engine
+/*.pt
+models/*.pt
+models/*.onnx
+!models/.gitkeep
+
+# Allow dedicated release & production app weights
+!release_weights/*.pt
+!release_weights/*.onnx
+!RailSamiksha_Production_App/weights/*.pt
+!RailSamiksha_Production_App/weights/*.onnx

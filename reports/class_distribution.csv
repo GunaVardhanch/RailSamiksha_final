@@ -1,0 +1,10 @@
+ID,Class Name,Train,Valid,Test,Total,Share (%)
+0,Ballast Defect,25,6,4,35,5.52
+1,Damaged Fastener,29,6,4,39,6.15
+2,Foreign Objects,77,28,6,111,17.51
+3,Missing Fastener,72,14,8,94,14.83
+4,Rail Crack,65,21,3,89,14.04
+5,Rail Joint Damage,22,9,3,34,5.36
+6,Rail Misalignment,6,6,2,14,2.21
+7,Rail Wear,24,5,2,31,4.89
+8,Sleeper Defect,118,46,23,187,29.5

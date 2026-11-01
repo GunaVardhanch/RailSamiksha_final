@@ -1,0 +1,44 @@
+# RailSamiksha Drone Defect Detection Pipeline Configuration
+# Target: 4K Drone Aerial Defect Inspection (RT-DETR + SAHI + ByteTrack)
+# Updated to match Production Action Plan: 1:1 scale inference without downscaled resolution collapse
+
+dataset:
+  config_path: Dataset_consolidated/data.yaml
+  num_classes: 9
+  classes:
+    0: Ballast Defect
+    1: Damaged Fastener
+    2: Foreign Objects
+    3: Missing Fastener
+    4: Rail Crack
+    5: Rail Joint Damage
+    6: Rail Misalignment
+    7: Rail Wear
+    8: Sleeper Defect
+
+sahi:
+  slice_height: 640
+  slice_width: 640
+  overlap_height_ratio: 0.20
+  overlap_width_ratio: 0.20
+  batch_size: 8  # Sliced patches batched on GPU VRAM
+  perform_standard_pred: False  # Bypasses 4K downscaled full-frame pass to prevent resolution collapse
+
+detector:
+  model_name: rtdetr-l
+  weights_path: models/rtdetr_consolidated_run_best.pt
+  confidence_threshold: 0.35  # Action Plan recommended threshold for cutting background texture noise
+  iou_threshold: 0.45
+  device: cuda:0
+  imgsz: 640
+
+postprocess:
+  merger_type: nmm  # Non-Maximum Merging for inter-patch tile boundary stitching
+  match_metric: iou
+  match_threshold: 0.50
+
+tracker:
+  type: bytetrack
+  track_thresh: 0.25
+  match_thresh: 0.80
+  min_consecutive_hits: 3  # Temporal flicker filter: require >= 3 hits across consecutive frames

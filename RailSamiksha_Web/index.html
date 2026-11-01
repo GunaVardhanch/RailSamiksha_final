@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RailSamiksha AI | AeroInspect RT-DETR Platform</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">🚆</div>
+      <div>
+        <div class="brand-title">RailSamiksha AI | AeroInspect</div>
+        <div class="brand-subtitle">Autonomous Aerial Railway Track Defect Inspection Platform</div>
+      </div>
+    </div>
+    <div class="header-badges">
+      <span class="badge badge-cyan">Model: RT-DETR-L</span>
+      <span class="badge badge-green">Vercel Edge Global CDN</span>
+      <span class="badge badge-purple">RTK-GPS Synced</span>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs-nav">
+    <button class="tab-btn active" data-tab="still-tab">📷 Aerial Still Inspection (4K)</button>
+    <button class="tab-btn" data-tab="video-tab">🎥 Flight Patrol Video Stream</button>
+    <button class="tab-btn" data-tab="map-tab">🗺️ RTK-GPS Corridor Map</button>
+    <button class="tab-btn" data-tab="ledger-tab">📋 P-Way Maintenance Registry</button>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- ============================================================== -->
+    <!-- TAB 1: STILL INSPECTION -->
+    <!-- ============================================================== -->
+    <section id="still-tab" class="tab-content active">
+      <div class="metrics-row">
+        <div class="metric-card">
+          <span class="metric-label">Detected Anomalies</span>
+          <span class="metric-value" id="stillDefectCount">3</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">SAHI Overlap Patches</span>
+          <span class="metric-value">8 Tiles</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Inference Latency</span>
+          <span class="metric-value">16.6 ms</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Peak Confidence</span>
+          <span class="metric-value">91.4%</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Orthophoto Aerial View</h3>
+          <div class="canvas-wrapper">
+            <img id="stillImage" class="canvas-viewport" src="sample_data/sample_track_image.jpg" alt="Aerial Rail Track">
+            <canvas id="overlayCanvas"></canvas>
+          </div>
+          <div class="hud-bar">
+            <div class="hud-item"><span>Resolution</span><span>2752 × 1536 px</span></div>
+            <div class="hud-item"><span>Drone GSD</span><span>0.65 mm/px</span></div>
+            <div class="hud-item"><span>Simulated GPS</span><span>28.6139°N, 77.2090°E</span></div>
+            <div class="hud-item"><span>BBox Filtering</span><span id="bboxStatusText">Visible</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Inspection Parameters</h3>
+          <div class="control-group">
+            <label class="control-label">Sample Orthophoto Asset</label>
+            <select id="sampleSelect" class="select-input">
+              <option value="sample_data/sample_track_image.jpg">Sample Track Flight Orthophoto 1</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Confidence Threshold: <span id="confVal">30%</span></label>
+            <input type="range" id="confSlider" min="10" max="90" value="30" step="5" style="width: 100%; accent-color: var(--cyan-accent);">
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Bounding Box Overlay</label>
+            <button id="toggleBBoxBtn" class="btn-primary" style="background: #1e293b; border: 1px solid var(--border-color); color: #fff;">
+              Toggle Bounding Boxes
+            </button>
+          </div>
+
+          <button id="runStillInspectBtn" class="btn-primary" style="margin-top: 20px;">
+            🔍 Execute 4K Defect Analysis
+          </button>
+
+          <div style="margin-top: 20px;">
+            <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Identified Track Anomalies</h4>
+            <div id="defectsList" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Dynamic Defect Pills -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- TAB 2: FLIGHT PATROL VIDEO STREAM -->
+    <!-- ============================================================== -->
+    <section id="video-tab" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Live Drone Patrol Video Feed</h3>
+          <div style="position: relative; width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000;">
+            <video id="patrolVideo" src="sample_data/sample_track_flight.mp4" controls autoplay loop muted style="width: 100%; height: auto; max-height: 480px; display: block;"></video>
+          </div>
+
+          <div class="hud-bar">
+            <div class="hud-item"><span>Flight Time</span><span id="videoTime">00:04.2s</span></div>
+            <div class="hud-item"><span>Drone Speed</span><span>6.8 km/h</span></div>
+            <div class="hud-item"><span>Altitude AGL</span><span>3.8 m</span></div>
+            <div class="hud-item"><span>ByteTrack Status</span><span style="color: #34d399;">Active (3-Hit Filter)</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Live Stream Analytics</h3>
+          <div class="metric-card" style="margin-bottom: 12px;">
+            <span class="metric-label">Verified Track Incidents</span>
+            <span class="metric-value" id="verifiedCount">2</span>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Video Clip Asset</label>
+            <select class="select-input">
+              <option>sample_track_flight.mp4 (Sample Corridor)</option>
+            </select>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Temporal Track Registry</h4>
+            <div style="font-size: 12px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="background: var(--bg-primary); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                <span>#1 Damaged Fastener (Clip Bend)</span>
+                <span class="sev-pill sev-med">Medium</span>
+              </div>
+              <div style="background: var(--bg-primary); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between;">
+                <span>#2 Rail Wear (Gauge Corner Flow)</span>
+                <span class="sev-pill sev-low">Low</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- TAB 3: RTK-GPS DEFECT MAP -->
+    <!-- ============================================================== -->
+    <section id="map-tab" class="tab-content">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h3 style="font-size: 16px; color: #fff;">Railway Corridor Georeferenced Defect Map</h3>
+            <p style="font-size: 12px; color: var(--text-muted);">Real RTK-GPS coordinates plotted along surveyed railway line.</p>
+          </div>
+          <span class="badge badge-green">Leaflet OpenStreetMap Online</span>
+        </div>
+        <div id="mapContainer"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- TAB 4: P-WAY INCIDENT LEDGER -->
+    <!-- ============================================================== -->
+    <section id="ledger-tab" class="tab-content">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="font-size: 16px; color: #fff;">Permanent Way (P-Way) Maintenance Registry</h3>
+            <p style="font-size: 12px; color: var(--text-muted);">Official railway maintenance dispatch ledger with chainage markings and RTK-GPS coordinates.</p>
+          </div>
+          <button id="downloadCsvBtn" class="btn-primary" style="width: auto; padding: 10px 18px;">
+            📥 Export Maintenance CSV
+          </button>
+        </div>
+
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Track ID</th>
+                <th>Chainage (KM)</th>
+                <th>Defect Category</th>
+                <th>Severity</th>
+                <th>Confidence</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Action Required</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerTableBody">
+              <!-- Dynamically Populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

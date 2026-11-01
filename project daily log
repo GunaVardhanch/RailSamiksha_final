@@ -1,0 +1,145 @@
+day_0:
+ workspace creation, antigravity installation and prerequsistes installation.
+
+day_1:
+ system & GPU audit, isolated .venv creation, PyTorch with CUDA 12.4 installation, core dependencies installation (ultralytics, sahi, supervision, opencv-python-headless, streamlit, pandas, pyyaml), CUDA verification, project state update, comprehensive dataset analysis (resolution audit, 9-class frequency profiling, bounding box scale analysis, SAHI feasibility verification, configs/dataset.yaml & configs/pipeline_config.yaml setup, and sample ground-truth visualization generation), and test-split rebalancing (transferred 4 verified pure image-label pairs from train to test, resolving 0-instance gaps for Damaged Fastener and Rail Misalignment).
+
+ day_2:
+ commencement and completion of Phase 2: implementation and unit verification of train.py for RT-DETR-L transfer learning, batched SAHI patch slicing pipeline (src/sahi_slicer.py), detector engine (src/detector.py), inter-patch Non-Maximum Merging (src/postprocessor.py), ByteTrack temporal deduplication tracker with 3-hit flicker filter (src/tracker.py), video ingestion and telemetry parser (src/ingestion.py), unified RailSamikshaPipeline (src/pipeline.py), latency/throughput benchmark suite (benchmark.py), TensorRT/ONNX exporter (export_engine.py), interactive Streamlit review dashboard (app.py); completed 50 epochs of RT-DETR-L fine-tuning on NVIDIA RTX A4000 GPU (10.6 minutes, best checkpoint saved to models/rtdetr_railsamiksha_best.pt); benchmarked 4K pipeline latency at 501.81 ms (15.67 ms/patch); and exported optimized FP16 graph to models/rtdetr_railsamiksha_best.onnx (62.9 MB).
+
+day_3:
+ commencement and completion of transfer learning enhancement: diagnosed convergence issues, upgraded training pipeline with 15 frozen backbone layers, aggressive synthetic augmentations (mosaic 1.0, mixup 0.15, copy-paste 0.3, flips), increased classification loss weight (cls=1.5), and early-stopping (patience=25, 99 epochs completed in 16.7 min on RTX A4000); boosted precision to 79.86% (from 1.37%) and Rail Crack mAP50 to 13.8%; archived models/rtdetr_l_improved_best.pt and compiled slimmed ONNX FP16 engine models/rtdetr_l_improved_best.onnx (62.9 MB).
+ 📋 Summary of Today's Accomplishments (Day 3)
+Model Convergence Diagnosis:
+Analyzed the Day 2 baseline failure (diverging classification loss, low mAP).
+Verified upstream checkpoint availability (Ultralytics provides rtdetr-l.pt and rtdetr-x.pt).
+Transfer Learning Pipeline Overhaul:
+Upgraded 
+
+train.py
+ with 15 frozen backbone layers to protect pretrained COCO representations.
+Integrated synthetic multi-image augmentations (Mosaic 1.0, MixUp 0.15, Copy-Paste 0.3, Flips).
+Weighted classification loss (cls=1.5) and configured early stopping (patience=25).
+Training Execution & Checkpoint Archival:
+Completed 99 epochs in 16.7 minutes on the NVIDIA RTX A4000 GPU.
+Precision surged from 1.37% to 79.86% (a 58× improvement in false-positive suppression).
+Rail Crack defect mAP@50 reached 13.80%.
+Saved best weights to 
+
+models/rtdetr_l_improved_best.pt
+.
+Exported optimized FP16 graph to 
+
+models/rtdetr_l_improved_best.onnx
+ (62.9 MB).
+Production Dataset Scaling Blueprint:
+Authored 
+production_dataset_expansion_report.md
+ specifying the target class distribution (5,000 images / 25,500 boxes) and drone flight parameters (3–5m AGL, 0.5–1.0 mm/px GSD).
+State Ledger Synchronized:
+Updated 
+
+PROJECT_STATE.md
+ and 
+
+project daily log
+.
+day_4:
+ commencement and completion of Production Action Plan execution (Phase 1 & Phase 2):
+ 1. Diagnosed the root cause of the previous 2.21% mAP failure (train-vs-inference 4K-to-640 downscaling resolution collapse).
+ 2. Implemented tools/slice_dataset.py to pre-slice full drone frames into native 640x640 1:1 scale patches with 20% overlap, strict data-leakage split protection, box truncation filtering, and 15% hard negative mining (generated Dataset_tiled).
+ 3. Implemented tools/augment_rare_classes.py for Phase 2 synthetic class balancing, boosting minority classes (Rail Misalignment, Rail Wear, Rail Joint Damage, Damaged Fastener, Ballast Defect) to >= 150 instances each (1,280 total training patches).
+ 4. Redesigned train.py with production RT-DETR-L recipe (AdamW, cosine LR, close-mosaic=10, box=7.5, cls=0.5, dfl=1.5, max_det=300).
+ 5. Completed 35 epochs of production fine-tuning on NVIDIA RTX A4000 GPU (saved to models/rtdetr_production_tiled_best.pt).
+ 6. mAP@50 leaped from 2.21% to 36.25% on the held-out test split (a 16.4x improvement); Rail Crack mAP50 reached 59.2%, Rail Wear reached 79.7%, and Rail Misalignment reached 61.7%.
+ 7. Calibrated configs/pipeline_config.yaml (perform_standard_pred=False, conf=0.35, persistence=3) and verified 4K end-to-end benchmark latency at 502.97 ms (1.99 FPS, 15.71 ms/patch).
+
+day_5:
+ commencement and completion of Scale-Up Dataset Ingestion, Audit & Architecture Alignment:
+ 1. Received and audited initial Part 1 batch (577 images, 1,236 boxes); identified class deficiencies (1 Rail Wear, 0 Rail Misalignment).
+ 2. Ingested updated expanded dataset 'Dats set final version part 1.1' (899 images, 1,877 defect boxes, 202 clean negative images, 512x512 uniform resolution).
+ 3. Executed automated verification via scripts/audit_new_dataset.py; confirmed positive representation across all 9 canonical defect classes:
+    - Sleeper Defect: 577 boxes
+    - Damaged Fastener: 359 boxes (doubled from 179)
+    - Foreign Objects: 301 boxes
+    - Missing Fastener: 191 boxes (surged from 31)
+    - Rail Crack: 154 boxes (tripled from 50)
+    - Ballast Defect: 127 boxes
+    - Rail Wear: 116 boxes (116x leap from 1)
+    - Rail Joint Damage: 35 boxes
+    - Rail Misalignment: 17 boxes (previously 0)
+    - Clean Hard Negatives: 202 background patches (22.5% FP suppression bank)
+ 4. Mapped raw 11-class Roboflow taxonomy into canonical 9-class system (configs/dataset.yaml).
+ 5. Completed Dataset Consolidation via tools/remap_and_merge_part1_1.py:
+    - Standardized Part 1.1's raw 11 Roboflow classes into canonical 9 classes per configs/dataset.yaml.
+    - Merged with Dataset_tiled into Dataset_consolidated with strict train/valid/test split protection (zero cross-leakage confirmed via cryptographic MD5 hashing).
+    - Total Consolidated Images: 2,544 (1,910 train, 432 valid, 202 test).
+    - Total Defect Bounding Boxes: 4,293 (3,258 train, 689 valid, 346 test).
+    - Hard Negatives: 352 background images (13.8% total, 238 in train) for false-positive suppression.
+    - Representation milestone: Every single one of the 9 defect classes now has >= 168 boxes in train (Rail Misalignment: 168, Rail Joint Damage: 185, Ballast Defect: 266, Rail Wear: 240, Rail Crack: 339, Missing Fastener: 425, Damaged Fastener: 432, Foreign Objects: 451, Sleeper Defect: 752).
+ 6. Executed RT-DETR-L Production Fine-Tuning on NVIDIA RTX A4000 GPU across Dataset_consolidated (1,910 train, 432 val, 202 test):
+    - Completed 50 epochs with AdamW, Cosine LR decay, and 10-epoch close-mosaic.
+    - Test mAP@50 reached 53.75% (up from 36.25% on Day 4, a 17.5 percentage point increase).
+    - Precision: 61.64%, Recall: 54.12%, mAP50-95: 31.22%.
+    - Per-class performance: Rail Misalignment 74.2%, Ballast Defect 68.2%, Rail Wear 68.0%, Foreign Objects 65.2%, Rail Crack 51.4%, Damaged Fastener 48.1%, Missing Fastener 47.9%, Sleeper Defect 42.6%, Rail Joint Damage 18.1%.
+    - Saved best checkpoint to models/rtdetr_consolidated_run_best.pt (66.25 MB).
+ 7. Compiled and Exported High-Throughput ONNX FP16 Engine:
+    - Successfully compiled via tools/export_engine.py with onnxslim opset 18: models/rtdetr_consolidated_run_best.onnx (62.9 MB).
+    - Calibrated configs/pipeline_config.yaml to activate new production weights.
+ 8. Established SavePoint & Tested 800px Frozen Experiment:
+    - Created physical SavePoint snapshot at models/savepoints/day5_53map_baseline/.
+    - Implemented tools/rollback_to_savepoint.py and automated promotion gate in train.py.
+    - Tested 800px with 10 frozen backbone layers: Fasteners improved to 57.4% (P=72.5%) and Foreign Objects to 73.2%, but freezing low-level layers degraded long-range track geometry (Misalignment 20.0%, Crack 22.4%), resulting in 44.08% overall mAP.
+    - SavePoint Promotion Gate automatically triggered, blocking deployment and keeping 53.75% model safe.
+ 9. SavePoint Restoration & Cleanup:
+    - Executed tools/rollback_to_savepoint.py; confirmed Day 5 production model models/rtdetr_consolidated_run_best.pt (53.75% mAP50) is actively restored in configs/pipeline_config.yaml.
+    - Purged experimental artifacts (deleted models/rtdetr_consolidated_800_frozen_best.pt, runs/detect/runs/rtdetr_consolidated_800_frozen, and runs/detect/val-3).
+    - Dropped all secondary YOLO/hybrid plans per user specification; remaining 100% committed to RT-DETR-L.
+    - Completed deep dataset audit (scripts/analyze_dataset_deep.py) and authored DATASET_V2_PREPARATION_AND_QUALITY_GUIDE.md detailing the +280 to +350 targeted image expansion roadmap to reach >= 85-90% accuracy.
+ 10. Current Active Baseline: models/rtdetr_consolidated_run_best.pt (53.75% mAP50) in configs/pipeline_config.yaml. Ready for app.py dashboard testing.
+
+day_6:
+ commencement and completion of Final Version Dataset (Railway_defect_dataset_1200) Ingestion, Cross-Merging & Retraining:
+ 1. Received user request to remove previous final dataset ('Dats set final version part 1.1') and adopt new 1200+ images dataset ('Railway_defect_dataset_1200') as final set version, training model with this and pre dataset.
+ 2. Verified removal of 'Dats set final version part 1.1' and purged legacy Dataset_consolidated.
+ 3. Audited 'Railway_defect_dataset_1200' (1,237 images, 3,184 defect boxes, 202 clean negative images, 15 Roboflow classes).
+ 4. Developed and executed tools/remap_and_merge_v3_1200.py:
+    - Remapped 15 raw Roboflow classes to canonical 9 classes (configs/dataset.yaml).
+    - Cross-referenced with Dataset_pre via MD5 hashing: resolved 252 overlapping images to latest v3 annotations without duplicate conflicts, and integrated 44 unique field images into the train split (+69 defect boxes).
+    - Generated new Dataset_consolidated: 1,281 images (919 train, 236 valid, 126 test), 3,253 defect boxes, 217 clean background negatives (16.9%).
+    - Cryptographically verified 0.00% data leakage across train, valid, and test splits (0 images).
+ 5. Launched RT-DETR-L production fine-tuning on NVIDIA RTX A4000 GPU (50 epochs, batch 8, imgsz 640, AdamW, cosine LR, 10 close-mosaic):
+    - Checkpoint saved to models/rtdetr_v3_1200_consolidated_best.pt (66.25 MB).
+    - Evaluated on held-out test split (126 images, 339 instances): mAP@50 reached 51.22%, mAP@50-95 reached 33.49% (surpassing Day 5's 31.22%), Precision 58.62%, Recall 50.97%.
+    - Key defect leaps: Rail Joint Damage surged from 18.1% to 40.2% (>2x leap), Ballast Defect 85.3%, Foreign Objects 76.8%, Rail Misalignment 64.2%.
+ 6. Compiled and exported optimized high-throughput ONNX FP16 engine via export_engine.py with onnxslim opset 18: models/rtdetr_v3_1200_consolidated_best.onnx (62.9 MB).
+ 7. SavePoint Protection Gate: Day 5 baseline (53.75% mAP50) remains safely active in configs/pipeline_config.yaml, while Day 6 model (models/rtdetr_v3_1200_consolidated_best.pt / .onnx) is fully preserved for comparative analysis and inference.
+
+day_7:
+ commencement and completion of Dedicated Standalone Web Application (RailSamiksha_Production_App) Extraction & Deployment Build:
+ 1. Extracted 53.75% mAP50 master model weights (models/rtdetr_consolidated_run_best.pt, 66.25 MB) and slimmed ONNX FP16 engine (models/rtdetr_consolidated_run_best.onnx, 62.9 MB) into RailSamiksha_Production_App/weights/.
+ 2. Built self-contained production architecture with SAHI 1:1 scale patch slicer (core/slicer.py), Non-Maximum Merging (core/merger.py), ByteTrack 3-hit temporal flicker filter (core/tracker.py), RTK-GPS telemetry parser (core/telemetry.py), and unified pipeline (core/pipeline.py).
+ 3. Authored modern aerospace-grade dark UI Streamlit application (app.py) supporting:
+    - Tab 1: High-Resolution Aerial Still Frame Inspection with 4K SAHI tiling, defect crop inspection gallery, and metrics HUD.
+    - Tab 2: Aerial Patrol Video Inspection with real-time ByteTrack temporal deduplication, telemetry HUD, and live incident table.
+    - Tab 3: Georeferenced Defect Map with interactive RTK-GPS track corridor plotting.
+    - Tab 4: P-Way Maintenance Incident Registry with severity cards and 1-click CSV report export.
+ 4. Packaged pre-loaded sample drone patrol assets in samples/ (sample_track_flight.mp4, sample_track_image.jpg, Ballast Washout, Broken Track, Defective clips).
+ 5. Configured portable execution and deployment assets: 1-click Windows launcher (run_app.bat, run_app.py), cloud container spec (Dockerfile), and dependencies (requirements.txt).
+ 6. Completed end-to-end dry-run verification on GPU (cuda:0) for both still and video inference.
+ 7. Commencement and completion of RT-DETR-L 50-epoch retraining with verified notebook recipe (train_canonical_85.py):
+    - Installed albumentations (v2.0.8) activating out-of-the-box transforms: Blur, MedianBlur, ToGray, and CLAHE.
+    - Set explicit absolute paths in Dataset_consolidated/data.yaml (1,281 images, 9 canonical classes).
+    - Executed 50 epochs on NVIDIA RTX A4000 GPU (0.563 hrs) with batch=16, AdamW (lr0=0.000769, momentum=0.9), amp=True, freeze=None.
+    - Achieved 50.74% mAP@50 and 32.48% mAP@50-95 on held-out test split (126 images, 339 instances):
+      * Rail Misalignment: 75.0% mAP50
+      * Foreign Objects: 72.8% mAP50
+      * Ballast Defect: 71.2% mAP50
+      * Damaged Fastener: 54.1% mAP50
+      * Rail Wear: 46.7% mAP50
+      * Rail Joint Damage: 40.1% mAP50
+      * Rail Crack: 39.5% mAP50
+      * Sleeper Defect: 32.2% mAP50
+      * Missing Fastener: 24.9% mAP50
+    - Checkpoint saved to models/rtdetr_v3_canonical_85_best.pt (66.3 MB) and runs/detect/runs/detect/runs/rtdetr_v3_canonical_85/weights/best.pt.
+    - Exported optimized high-throughput ONNX FP16 engine with onnxslim: models/rtdetr_v3_canonical_85_best.onnx (62.9 MB, 16.6 ms inference latency).

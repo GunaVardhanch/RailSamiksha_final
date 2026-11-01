@@ -1,0 +1,11 @@
+ultralytics
+sahi
+supervision
+opencv-python-headless
+streamlit
+pandas
+pyyaml
+tabulate
+onnx
+onnxruntime-gpu
+onnxslim
