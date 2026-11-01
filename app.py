@@ -2,10 +2,10 @@
 RailSamiksha — Autonomous Aerial Railway Track Defect Inspection System
 =======================================================================
 Production-Grade Interactive Streamlit Application & Multi-Role Aerospace Dashboard
-Powered by RT-DETR-L (Real-Time Transformer), SAHI 1:1 Scale Overlapping Patch Slicing,
-ByteTrack Multi-Hit Temporal Deduplication, and RTK-GPS Asset Mapping.
+Powered by SAHI 1:1 Scale Overlapping Patch Slicing, ByteTrack Multi-Hit
+Temporal Deduplication, and RTK-GPS Asset Mapping.
 
-Deployable to Streamlit Community Cloud, Hugging Face Spaces, Docker, and Railway.
+Deployable directly to Streamlit Community Cloud, Hugging Face Spaces, Docker, and Railway.
 """
 
 import os
@@ -26,14 +26,12 @@ BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-# Also ensure RailSamiksha_Production_App is accessible as fallback
 PROD_APP_DIR = BASE_DIR / "RailSamiksha_Production_App"
 if PROD_APP_DIR.exists() and str(PROD_APP_DIR) not in sys.path:
     sys.path.insert(0, str(PROD_APP_DIR))
 
 from config import (
     DEFAULT_PYTORCH_WEIGHTS,
-    DEFAULT_ONNX_WEIGHTS,
     SAMPLES_DIR,
     CLASS_NAMES,
     SEVERITY_MAPPING,
@@ -48,13 +46,13 @@ from core.pipeline import RailSamikshaProductionPipeline
 
 # Page configuration
 st.set_page_config(
-    page_title="RailSamiksha AI | AeroInspect RT-DETR",
+    page_title="RailSamiksha AI | Aerial Railway Track Inspection",
     page_icon="🚆",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling (Dark Aerospace UI matching Indian Railways TMS & Production Aesthetic)
+# Custom Styling (Dark Aerospace UI matching Indian Railways TMS Aesthetic)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
@@ -107,13 +105,6 @@ st.markdown("""
         color: #06b6d4;
         margin-top: 4px;
     }
-    .sev-pill {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 700;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -130,47 +121,16 @@ IRPWM_ACTIONS = {
     "Ballast Defect": "IRPWM Para 228: Replenish 250mm ballast cushion & tamp"
 }
 
-# Resolve weights paths
-WEIGHT_OPTIONS = {}
-
-# 1. Primary Deployed Weights
-best_candidates = [
-    BASE_DIR / "weights" / "best.pt",
-    PROD_APP_DIR / "weights" / "best.pt"
-]
-for c in best_candidates:
-    if c.exists():
-        WEIGHT_OPTIONS["RT-DETR-L Deployed Production Model (53.75% mAP50)"] = str(c)
-        break
-
-# 2. Sanitized 85 Epochs Checkpoint
-sanitized_p = BASE_DIR / "release_weights" / "rtdetr_v3_sanitized_85_best.pt"
-if sanitized_p.exists():
-    WEIGHT_OPTIONS["RT-DETR-L Sanitized Checkpoint (55.3% Sleeper Precision - 85 Epochs)"] = str(sanitized_p)
-
-# 3. Canonical 85 Epochs Checkpoint
-canonical_p = BASE_DIR / "release_weights" / "rtdetr_v3_canonical_85_best.pt"
-if canonical_p.exists():
-    WEIGHT_OPTIONS["RT-DETR-L Canonical Checkpoint (High Sensitivity - 85 Epochs)"] = str(canonical_p)
-
-# 4. Slimmed ONNX
-onnx_candidates = [
-    BASE_DIR / "weights" / "best.onnx",
-    PROD_APP_DIR / "weights" / "best.onnx"
-]
-for c in onnx_candidates:
-    if c.exists():
-        WEIGHT_OPTIONS["RT-DETR-L Slimmed (ONNX FP16)"] = str(c)
-        break
-
-if not WEIGHT_OPTIONS:
-    WEIGHT_OPTIONS["Default RT-DETR-L Weights"] = DEFAULT_PYTORCH_WEIGHTS
+# Resolve solely production weights
+ROOT_BEST_PT = BASE_DIR / "weights" / "best.pt"
+PROD_BEST_PT = PROD_APP_DIR / "weights" / "best.pt"
+PRODUCTION_WEIGHTS = str(ROOT_BEST_PT if ROOT_BEST_PT.exists() else PROD_BEST_PT)
 
 
 @st.cache_resource
-def load_pipeline(weights_path: str, conf: float, slice_size: int, overlap: float, hits: int):
+def load_pipeline(conf: float, slice_size: int, overlap: float, hits: int):
     return RailSamikshaProductionPipeline(
-        weights_path=weights_path,
+        weights_path=PRODUCTION_WEIGHTS,
         conf_threshold=conf,
         slice_size=slice_size,
         overlap_ratio=overlap,
@@ -181,22 +141,10 @@ def load_pipeline(weights_path: str, conf: float, slice_size: int, overlap: floa
 def main():
     # Sidebar
     with st.sidebar:
-        st.markdown("### ⚙️ Inspection Configuration")
-        
-        # Model selector
-        chosen_label = st.selectbox(
-            "Model Architecture & Checkpoint",
-            list(WEIGHT_OPTIONS.keys()),
-            index=0,
-            help="Select fine-tuned RT-DETR-L weights for drone anomaly inference."
-        )
-        selected_weights = WEIGHT_OPTIONS[chosen_label]
-
-        if not os.path.exists(selected_weights):
-            st.error(f"Weights file not found at: {selected_weights}")
+        st.markdown("### ⚙️ Inspection Controls")
 
         conf_threshold = st.slider(
-            "Confidence Threshold",
+            "Detection Sensitivity (Confidence)",
             min_value=0.10,
             max_value=0.80,
             value=0.20,
@@ -205,12 +153,12 @@ def main():
         )
 
         st.markdown("---")
-        st.markdown("#### 🔬 SAHI 1:1 Scale Tiling")
+        st.markdown("#### 🔬 SAHI High-Resolution Tiling")
         slice_dim = st.select_slider(
             "Patch Dimension (pixels)",
             options=[512, 640, 800],
             value=DEFAULT_SLICE_SIZE,
-            help="Size of sub-windows sliced across 4K drone orthophotos to prevent micro-defect feature collapse."
+            help="Sub-window size sliced across 4K drone orthophotos to preserve micro-defect features."
         )
         overlap_pct = st.slider(
             "Tile Overlap Margin (%)",
@@ -221,9 +169,9 @@ def main():
         ) / 100.0
 
         st.markdown("---")
-        st.markdown("#### ⏱️ ByteTrack Temporal Filter")
+        st.markdown("#### ⏱️ Video Temporal Filter")
         temporal_hits = st.slider(
-            "Verification Persistence (Hits)",
+            "Verification Persistence (Frames)",
             min_value=1,
             max_value=5,
             value=DEFAULT_TEMPORAL_HITS,
@@ -231,13 +179,9 @@ def main():
             help="Consecutive video frames a defect must persist to be confirmed in incident registry."
         )
 
-        st.markdown("---")
-        st.info("💡 **Active Checkpoint:**\n`" + Path(selected_weights).name + "`\n\n🎯 **Trained Baseline:**\n53.75% mAP@50 | 2,544 Images | 4,293 Bounding Boxes")
-
     # Load Pipeline
     try:
         pipeline = load_pipeline(
-            weights_path=selected_weights,
             conf=conf_threshold,
             slice_size=slice_dim,
             overlap=overlap_pct,
@@ -254,20 +198,20 @@ def main():
         return
 
     # Header Card
-    device_name = "NVIDIA CUDA (GPU Accelerated)" if pipeline.detector.device.startswith("cuda") else "CPU Fallback"
+    device_name = "NVIDIA CUDA (GPU Accelerated)" if pipeline.detector.device.startswith("cuda") else "CPU Acceleration"
     st.markdown(f"""
     <div class="header-card">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
-                <h2 style="margin: 0; color: #ffffff; font-weight: 700;">🚆 RailSamiksha AI | AeroInspect RT-DETR</h2>
+                <h2 style="margin: 0; color: #ffffff; font-weight: 700;">🚆 RailSamiksha AI | Aerial Track Defect Inspection</h2>
                 <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 14px;">
                     Autonomous Aerial Railway Track Defect Inspection & RTK-GPS Asset Mapping System
                 </p>
             </div>
             <div style="margin-top: 8px;">
-                <span class="badge badge-primary">{chosen_label.split('(')[0].strip()}</span>
+                <span class="badge badge-primary">AI Vision Engine: Active</span>
                 <span class="badge badge-success">Hardware: {device_name}</span>
-                <span class="badge badge-warning">SAHI 1:1 Scale Active</span>
+                <span class="badge badge-warning">SAHI 1:1 Scale Tiling</span>
             </div>
         </div>
     </div>
@@ -275,44 +219,36 @@ def main():
 
     # Main Navigation Tabs
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📷 Aerial Still Frame Inspection (4K SAHI)",
-        "🎥 Flight Patrol Video Inspection (ByteTrack)",
-        "🗺️ Georeferenced Defect Map (RTK-GPS)",
-        "🌐 Integrated Full-Stack Web Platform",
+        "📷 Aerial Still Frame Inspection",
+        "🎥 Flight Patrol Video Inspection",
+        "🗺️ Georeferenced Defect Map",
+        "🌐 Integrated Web Platform",
         "📋 Maintenance Incident Ledger & TMS Export"
     ])
 
-    # Find sample folders
     samples_dir = SAMPLES_DIR if SAMPLES_DIR.exists() else (PROD_APP_DIR / "samples")
-    sample_images = sorted(list(samples_dir.glob("*.jpg")) + list(samples_dir.glob("*.png"))) if samples_dir.exists() else []
-    sample_videos = sorted(list(samples_dir.glob("*.mp4"))) if samples_dir.exists() else []
 
     # =========================================================================
     # TAB 1: STILL FRAME INSPECTION
     # =========================================================================
     with tab1:
         st.markdown("#### High-Resolution Aerial Frame Defect Inspection")
-        st.caption("Processes 4K / 2.7K drone orthophotos via SAHI 1:1 scale overlapping patches to preserve micro-defect features (cracks, missing Pandrol clips).")
+        st.caption("Upload a 4K / 2.7K drone orthophoto to identify railway track structural anomalies with standard IRPWM compliance.")
 
         col_input, col_ctrl = st.columns([2, 1])
 
         with col_ctrl:
-            img_source = st.radio("Select Image Source", ["Built-in Sample Aerial Still", "Upload Custom Drone Image"], index=0)
-
-            if img_source == "Built-in Sample Aerial Still" and sample_images:
-                chosen_sample = st.selectbox("Select Sample Asset", sample_images, format_func=lambda x: x.name)
-                image_path = str(chosen_sample)
+            uploaded_img = st.file_uploader("Upload Drone Orthophoto (JPG/PNG)", type=["jpg", "jpeg", "png"])
+            if uploaded_img is not None:
+                tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                tfile.write(uploaded_img.read())
+                tfile.close()
+                image_path = tfile.name
             else:
-                uploaded_img = st.file_uploader("Upload Drone Orthophoto (JPG/PNG)", type=["jpg", "jpeg", "png"])
-                if uploaded_img is not None:
-                    tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-                    tfile.write(uploaded_img.read())
-                    tfile.close()
-                    image_path = tfile.name
-                else:
-                    image_path = str(sample_images[0]) if sample_images else None
+                default_img = samples_dir / "sample_track_image.jpg"
+                image_path = str(default_img) if default_img.exists() else None
 
-            use_sahi_toggle = st.checkbox("Enable SAHI 1:1 Scale Patch Slicing", value=True, help="Prevents downscaling resolution collapse on high-res 4K images.")
+            use_sahi_toggle = st.checkbox("Enable SAHI 1:1 Scale Patch Slicing", value=True, help="Preserves micro-defect resolution on high-res images.")
             inspect_btn = st.button("🔍 Execute Track Inspection", type="primary", use_container_width=True)
 
         with col_input:
@@ -320,16 +256,15 @@ def main():
                 raw_bgr = cv2.imread(image_path)
                 if raw_bgr is not None:
                     h, w = raw_bgr.shape[:2]
-                    st.image(cv2.cvtColor(raw_bgr, cv2.COLOR_BGR2RGB), caption=f"Input Orthophoto: {w} × {h} px", use_container_width=True)
+                    st.image(cv2.cvtColor(raw_bgr, cv2.COLOR_BGR2RGB), caption=f"Input Orthophoto ({w} × {h} px)", use_container_width=True)
                 else:
                     st.error("Unable to load selected image.")
 
         if inspect_btn and image_path and os.path.exists(image_path):
-            with st.spinner("Executing SAHI patch slicing + RT-DETR detection + Non-Maximum Merging..."):
+            with st.spinner("Processing track orthophoto slices and identifying defects..."):
                 results = pipeline.process_still_image(raw_bgr, use_sahi=use_sahi_toggle)
 
             st.markdown("---")
-            # Metrics Row
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f"""<div class="stat-card"><div class="stat-label">Total Defects Detected</div><div class="stat-val">{len(results['detections'])}</div></div>""", unsafe_allow_html=True)
             m2.markdown(f"""<div class="stat-card"><div class="stat-label">Patches Sliced (SAHI)</div><div class="stat-val">{results['patch_count']}</div></div>""", unsafe_allow_html=True)
@@ -339,7 +274,6 @@ def main():
             st.markdown("#### Annotated Inspection Output")
             st.image(cv2.cvtColor(results["annotated_image"], cv2.COLOR_BGR2RGB), caption="Identified Railway Track Anomalies with Severity Tags", use_container_width=True)
 
-            # Defect Breakdown
             if results["detections"]:
                 st.markdown("#### 📋 Detected Defect Inventory")
                 table_rows = []
@@ -357,7 +291,6 @@ def main():
                 df_stills = pd.DataFrame(table_rows)
                 st.dataframe(df_stills, use_container_width=True)
 
-                # Defect Crop Inspection Gallery
                 st.markdown("#### 🔬 High-Resolution Defect Crop Gallery")
                 gallery_cols = st.columns(min(4, len(results["detections"])))
                 for idx, det in enumerate(results["detections"][:8]):
@@ -376,25 +309,22 @@ def main():
     # TAB 2: FLIGHT PATROL VIDEO INSPECTION
     # =========================================================================
     with tab2:
-        st.markdown("#### Aerial Patrol Video Stream Processing with ByteTrack Persistence")
-        st.caption("Simulates live drone aerial inspection with synchronized RTK-GPS telemetry, spatial tracking, and temporal verification filtering.")
+        st.markdown("#### Aerial Patrol Video Stream Processing")
+        st.caption("Upload a drone patrol video to simulate live autonomous track inspection with synchronized telemetry and persistent defect tracking.")
 
         v_col1, v_col2 = st.columns([1, 2])
         with v_col1:
-            vid_source = st.radio("Select Video Input Source", ["Built-in Drone Flight Asset", "Upload Custom Drone Patrol Video (.mp4)"])
-
-            if vid_source == "Built-in Drone Flight Asset" and sample_videos:
-                chosen_vid = st.selectbox("Select Sample Flight Clip", sample_videos, format_func=lambda x: x.name)
-                video_file_path = str(chosen_vid)
+            uploaded_vid = st.file_uploader("Upload Drone Patrol Video (.mp4, .mov)", type=["mp4", "mov", "avi"])
+            if uploaded_vid is not None:
+                tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+                tfile.write(uploaded_vid.read())
+                tfile.close()
+                video_file_path = tfile.name
             else:
-                uploaded_vid = st.file_uploader("Upload Drone Patrol (.mp4, .mov)", type=["mp4", "mov", "avi"])
-                if uploaded_vid is not None:
-                    tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-                    tfile.write(uploaded_vid.read())
-                    tfile.close()
-                    video_file_path = tfile.name
-                else:
-                    video_file_path = str(sample_videos[0]) if sample_videos else None
+                default_vid = samples_dir / "Broken_Track _and_ fastner.mp4"
+                if not default_vid.exists():
+                    default_vid = samples_dir / "sample_track_flight.mp4"
+                video_file_path = str(default_vid) if default_vid.exists() else None
 
             stride_val = st.slider("Frame Stride (Skip Factor)", min_value=1, max_value=5, value=DEFAULT_VIDEO_STRIDE, help="Process every N-th frame for higher throughput.")
             start_vid_btn = st.button("▶️ Launch Patrol Video Inspection", type="primary", use_container_width=True)
@@ -428,14 +358,11 @@ def main():
                 if frame_idx % stride_val != 0:
                     continue
 
-                # Process Frame
                 res = pipeline.process_video_frame(frame, frame_idx)
 
-                # Render video frame
                 frame_rgb = cv2.cvtColor(res["annotated_frame"], cv2.COLOR_BGR2RGB)
                 video_placeholder.image(frame_rgb, caption=f"Patrol Video Stream | Frame {frame_idx}/{total_frames}", use_container_width=True)
 
-                # Update HUD
                 tele = res["telemetry"]
                 hud_placeholder.markdown(f"""
                 <div style="background: #0d1527; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 16px; margin-top: 8px; display: flex; justify-content: space-around; font-size: 13px;">
@@ -447,7 +374,6 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Update incident table
                 if res["verified_incidents"]:
                     df_v = pd.DataFrame(res["verified_incidents"])
                     table_placeholder.dataframe(df_v, use_container_width=True)
@@ -474,7 +400,7 @@ def main():
             st.map(df_map_view[["latitude", "longitude"]], zoom=15)
             st.dataframe(df_map, use_container_width=True)
         else:
-            st.info("No video inspection run yet in this session. Showing simulated baseline railway track corridor (New Delhi - Agra Section):")
+            st.info("Showing simulated baseline railway track corridor (New Delhi - Agra Mainline Section):")
             sim_pts = []
             base_lat, base_lon = 28.6139, 77.2090
             for i in range(15):
@@ -503,10 +429,10 @@ def main():
             1. **Drone Pilot / Operator Workspace:**
                - 4K SAHI Orthophoto inspection with interactive zoom & pan.
                - Real-time AI defect verification & rejection punchlist.
-               - Video patrol telemetry feed with ByteTrack active tracking.
+               - Video patrol telemetry feed with temporal active tracking.
             2. **Field Maintenance P-Way Gang Workspace:**
                - Interactive defect clearance punch-list.
-               - Real-time repair sign-off with IRPWM para standard compliance.
+               - Real-time repair sign-off with IRPWM standard compliance.
                - Safety clearance certificate generation.
             3. **Divisional Headquarters DRM Portal:**
                - High-level KPIs: Total surveys, active flights, divisional clearance ratio.
@@ -518,15 +444,14 @@ def main():
         with col_w2:
             st.markdown("""
             ### Backend REST API Endpoints:
-            - `GET /api/status` — Hardware telemetry, active weights, GPU status.
-            - `POST /api/infer/image` — 4K SAHI + RT-DETR-L image inference.
-            - `POST /api/infer/video` — ByteTrack patrol stream tracking.
+            - `GET /api/status` — Hardware telemetry & engine status.
+            - `POST /api/infer/image` — 4K SAHI image defect inference.
+            - `POST /api/infer/video` — Patrol video stream tracking.
             - `POST /api/auth/login` — Database-backed RBAC authentication.
             - `GET /api/reports/csv` — TMS-compliant CSV export with SHA-256.
             - `GET /api/db/export-schema` — Indian Railways SQL DDL schema download.
             """)
 
-        # Embed live preview iframe if web server is active
         st.markdown("---")
         st.markdown("##### Live Web Application Preview:")
         try:

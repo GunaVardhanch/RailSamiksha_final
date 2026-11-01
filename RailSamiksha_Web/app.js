@@ -92,10 +92,10 @@ async function checkBackendConnection() {
 
       if (navPill) {
         navPill.classList.add("online");
-        if (navText) navText.textContent = `RT-DETR-L Online (${BACKEND_CONFIG.device.toUpperCase()})`;
+        if (navText) navText.textContent = "AI Engine Online";
       }
       if (authBadge) {
-        authBadge.textContent = `🟢 SQLite TMS Backend & RT-DETR-L Active`;
+        authBadge.textContent = "🟢 TMS Database & AI Active";
         authBadge.className = "badge badge-green";
       }
       if (sqlBadge) {
@@ -827,6 +827,8 @@ function initCustomUploads() {
       const file = e.target.files[0];
       if (file) {
         currentUploadedFile = file;
+        const nameDisp = document.getElementById("imageFileNameDisplay");
+        if (nameDisp) nameDisp.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
         const objectUrl = URL.createObjectURL(file);
         imgEl.onload = () => {
           document.getElementById("resHudText").textContent = `${imgEl.naturalWidth} × ${imgEl.naturalHeight} px`;
@@ -834,7 +836,7 @@ function initCustomUploads() {
           runModelInferencePipeline(file);
         };
         imgEl.src = objectUrl;
-        showToast("Custom Drone Photo Loaded", `${file.name} queued for SAHI inference`, "info");
+        showToast("Drone Photo Loaded", `${file.name} ready for inspection`, "info");
       }
     });
   }
@@ -844,10 +846,12 @@ function initCustomUploads() {
       const file = e.target.files[0];
       if (file) {
         currentUploadedVideoFile = file;
+        const nameDisp = document.getElementById("videoFileNameDisplay");
+        if (nameDisp) nameDisp.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
         const url = URL.createObjectURL(file);
         vidEl.src = url;
         vidEl.play();
-        showToast("Custom Patrol Video Loaded", `${file.name} ready for ByteTrack inspection`, "success");
+        showToast("Patrol Video Loaded", `${file.name} ready for inspection`, "success");
       }
     });
   }
@@ -926,30 +930,7 @@ function initStillCanvas() {
     drawBoundingBoxes();
   });
 
-  const modelWeightsSelect = document.getElementById("modelWeightsSelect");
-  if (modelWeightsSelect) {
-    modelWeightsSelect.addEventListener("change", () => {
-      showToast("Model Switched", `Switched to ${modelWeightsSelect.options[modelWeightsSelect.selectedIndex].text}`, "info");
-      if (BACKEND_CONFIG.isOnline) {
-        runModelInferencePipeline();
-      }
-    });
-  }
-
-  document.getElementById("scenarioSelect").addEventListener("change", (e) => {
-    currentScenarioKey = e.target.value;
-    const imgEl = document.getElementById("stillImage");
-    if (currentScenarioKey === "scenario_fracture") {
-      imgEl.src = "sample_data/track_fracture_sample.jpg";
-      document.getElementById("resHudText").textContent = "2048 × 1536 px";
-      document.getElementById("gpsHudText").textContent = "28.6175°N, 77.2120°E";
-    } else {
-      imgEl.src = "sample_data/sample_track_image.jpg";
-      document.getElementById("resHudText").textContent = "2752 × 1536 px";
-      document.getElementById("gpsHudText").textContent = "28.6148°N, 77.2096°E";
-    }
-    imgEl.onload = () => drawBoundingBoxes();
-  });
+  // Scenario and model selection removed — solely using production model and direct upload
 
   document.getElementById("runStillInspectBtn").addEventListener("click", () => {
     runModelInferencePipeline();
@@ -1744,13 +1725,12 @@ async function runModelInferencePipeline(customFile = null) {
 
   const confSlider = document.getElementById("confSlider");
   const confVal = confSlider ? parseFloat(confSlider.value) / 100 : 0.20;
-  const modelSelect = document.getElementById("modelWeightsSelect");
-  const modelChoice = modelSelect ? modelSelect.value : "deployed_prod";
+  const modelChoice = "deployed_prod";
 
   const targetFile = customFile || currentUploadedFile;
 
   if (BACKEND_CONFIG.isOnline) {
-    showToast("Production AI Pipeline Active", "Running SAHI patch slicing + RT-DETR-L on GPU...", "info");
+    showToast("AI Inspection Active", "Executing high-resolution track defect inspection...", "info");
 
     try {
       let body;
@@ -1840,8 +1820,8 @@ async function runModelInferencePipeline(customFile = null) {
         if (resHud) resHud.textContent = `${stillImg.naturalWidth || 1920} × ${stillImg.naturalHeight || 1080} px`;
 
         showToast(
-          "Real-Time Detection Successful",
-          `RT-DETR-L found ${data.total_defects} verified defects (${data.weights_used}) in ${data.inference_time_ms}ms`,
+          "Inspection Complete",
+          `Identified ${data.total_defects} verified defect signatures in ${data.inference_time_ms}ms`,
           "success"
         );
         return;
@@ -1883,7 +1863,7 @@ async function runVideoInspection() {
   const keyframesGallery = document.getElementById("videoKeyframeGallery");
 
   if (statusBadge) statusBadge.textContent = "Processing Stream...";
-  showToast("ByteTrack Patrol Inspection", "Extracting video frames and running RT-DETR-L + ByteTrack tracker on GPU...", "info");
+  showToast("Video Stream Inspection", "Processing aerial flight stream and tracking defect incidents...", "info");
 
   try {
     let body;
@@ -1961,8 +1941,8 @@ async function runVideoInspection() {
       }
 
       showToast(
-        "ByteTrack Patrol Inspection Complete",
-        `Processed ${data.inspected_frames} frames in ${data.inference_time_ms}ms. Confirmed ${data.confirmed_tracklets} tracklets (${data.false_flashes_blocked} transient flashes eliminated).`,
+        "Video Inspection Complete",
+        `Processed ${data.inspected_frames} frames in ${data.inference_time_ms}ms. Confirmed ${data.confirmed_tracklets} defect incidents (${data.false_flashes_blocked} transient flashes eliminated).`,
         "success"
       );
     }

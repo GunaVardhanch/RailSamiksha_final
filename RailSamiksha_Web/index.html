@@ -423,53 +423,7 @@
           </div>
         </div>
 
-        <!-- AI Architecture & Benchmarks Section -->
-        <div class="card" style="margin-top: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h3 style="font-size: 15px; color: #fff;">🧠 Enterprise AI Model Weights & Validation Matrix</h3>
-            <span class="badge badge-green">3 Production Checkpoints Cataloged</span>
-          </div>
-          <div class="data-table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Model Release</th>
-                  <th>Training Optimization</th>
-                  <th>$mAP_{50}$</th>
-                  <th>Latency (RTX A4000)</th>
-                  <th>Anomaly Sanitization</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>RT-DETR-L v3 (Sanitized 85)</strong></td>
-                  <td>AdamW, Cleaned Box Scale, Zero Tie Leakage</td>
-                  <td><span class="badge badge-green">49.37%</span></td>
-                  <td>13.3 ms</td>
-                  <td>97.3% Noise Eliminated (0.5% Anomaly)</td>
-                  <td><span class="badge badge-cyan">Active Production</span></td>
-                </tr>
-                <tr>
-                  <td><strong>RT-DETR-L v2 (Canonical 85)</strong></td>
-                  <td>AdamW, Albumentations CLAHE, 50 Epochs</td>
-                  <td><span class="badge badge-green">50.74%</span></td>
-                  <td>13.5 ms</td>
-                  <td>19.5% Anomaly</td>
-                  <td><span class="badge badge-purple">Archived</span></td>
-                </tr>
-                <tr>
-                  <td><strong>RT-DETR-L v1 (Baseline)</strong></td>
-                  <td>Initial Consolidated Run, SGD</td>
-                  <td><span class="badge badge-green">53.75%</span></td>
-                  <td>13.4 ms</td>
-                  <td>19.5% Anomaly</td>
-                  <td><span class="badge badge-purple">Archived</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+
 
       </section>
 
@@ -529,27 +483,14 @@
               <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">AI Inspection Controls & Verification</h3>
               
               <div class="control-group">
-                <label class="control-label">Flight Corridor Preset or Custom Upload</label>
+                <label class="control-label">Upload Drone Orthophoto</label>
                 <div style="display: flex; gap: 8px;">
-                  <select id="scenarioSelect" class="select-input" style="flex: 2;">
-                    <option value="scenario_fastener">Corridor A: Pandrol Fastener & Rail Wear (KM 122.400)</option>
-                    <option value="scenario_fracture">Corridor B: Track Fracture & Transverse Crack (KM 122.510)</option>
-                    <option value="scenario_clean">Corridor C: High-Speed Ballasted Mainline (Clean Track)</option>
-                  </select>
-                  <label class="btn-secondary" style="flex: 1; text-align: center; cursor: pointer; padding: 8px 6px; font-size: 11px;">
-                    📁 Upload Image
+                  <label class="btn-secondary" style="flex: 1; text-align: center; cursor: pointer; padding: 10px; font-size: 12px; font-weight: 600;">
+                    📁 Select / Upload Drone Image
                     <input type="file" id="customImageInput" accept="image/*" style="display: none;">
                   </label>
                 </div>
-              </div>
-
-                            <div class="control-group">
-                <label class="control-label">AI Model Checkpoint (Select Weights)</label>
-                <select id="modelWeightsSelect" class="select-input" style="font-weight: 600;">
-                  <option value="deployed_prod" selected>RT-DETR-L Deployed Production App (Railway Production Model)</option>
-                  <option value="sanitized_85">RT-DETR-L Sanitized (55.3% Sleeper Precision - 85 Epochs)</option>
-                  <option value="canonical_85">RT-DETR-L Canonical (High Sensitivity - 85 Epochs)</option>
-                </select>
+                <div id="imageFileNameDisplay" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Aerial Orthophoto Loaded (Ready for Inspection)</div>
               </div>
 
 <div class="control-group">
@@ -633,21 +574,16 @@
               <h3 style="font-size: 15px; margin-bottom: 12px; color: #fff;">Video Stream Telemetry & Clip</h3>
               
               <div class="control-group">
-                <label class="control-label">Patrol Video Feed or Custom File</label>
+                <label class="control-label">Upload Drone Patrol Video</label>
                 <div style="display: flex; gap: 8px;">
-                  <select id="videoSelect" class="select-input" style="flex: 2;">
-                    <option value="sample_data/broken_track_patrol.mp4" selected>Broken Track & Pandrol Defect Patrol (High Anomaly)</option>
-                    <option value="sample_data/sample_track_flight.mp4">Corridor Survey Flight 01 (Ballast & Ties)</option>
-                    <option value="sample_data/ballast_washout.mp4">Ballast Washout & Erosion Flight</option>
-                    <option value="sample_data/defective_fastener.mp4">Defective Fastener Corridor Patrol</option>
-                  </select>
-                  <label class="btn-secondary" style="flex: 1; text-align: center; cursor: pointer; padding: 8px 6px; font-size: 11px;">
-                    🎥 Upload Video
+                  <label class="btn-secondary" style="flex: 1; text-align: center; cursor: pointer; padding: 10px; font-size: 12px; font-weight: 600;">
+                    🎥 Select / Upload Patrol Video (.mp4)
                     <input type="file" id="customVideoInput" accept="video/*" style="display: none;">
                   </label>
                 </div>
+                <div id="videoFileNameDisplay" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Patrol Flight Video Loaded (Ready for Stream Inspection)</div>
                 <button id="runVideoInspectBtn" class="btn-primary" style="width: 100%; margin-top: 10px;">
-                  ▶️ Launch ByteTrack Video AI Inspection
+                  ▶️ Launch Video Inspection
                 </button>
               </div>
 
