@@ -30,12 +30,14 @@ if __name__ == "__main__":
     print("   • Serving REST API & RT-DETR-L on: http://localhost:8000")
     print("   • Serving Integrated Web Frontend on: http://localhost:8000/")
     print("   • SQLite TMS Database: database/railsamiksha.db")
+    port = int(os.environ.get("PORT", 8000))
+    print(f"   • Listening on: http://0.0.0.0:{port}")
     print("=" * 70)
 
     uvicorn.run(
         "backend.app:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         log_level="info",
         reload=False
     )
