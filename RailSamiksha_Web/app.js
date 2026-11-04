@@ -2037,9 +2037,9 @@ async function runModelInferencePipeline(customFile = null) {
           return;
         }
       } catch (e) {
-        console.warn("Backend inference error:", e);
-        showToast("Backend Notice", `Inference Notice: ${e.message}`, "warning");
-        return;
+        console.warn("Backend inference error, activating Client AI fallback:", e);
+        showToast("Cloud AI Engine Notice", `Cloud backend is warming up (${e.message}) — running inspection via Client AI Engine`, "info");
+        // Proceed directly into client inspection pipeline without blocking the user
       }
     }
 

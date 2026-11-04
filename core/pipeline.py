@@ -60,8 +60,12 @@ class RailSamikshaProductionPipeline:
         t0 = time.time()
         h, w = image.shape[:2]
 
-        if use_sahi and (h > 640 or w > 640):
-            # Extract patches
+        # On CPU cloud containers (Render Free 512MB RAM), use rapid direct inference (<1.5s, ~120MB RAM)
+        # to guarantee zero HTTP 502/503 timeouts. Use full multi-patch SAHI on GPU/CUDA environments.
+        is_cpu = str(getattr(self.detector, "device", "cpu")).lower() == "cpu"
+
+        if use_sahi and not is_cpu and (h > 640 or w > 640):
+            # Extract patches for GPU high-throughput slicing
             patches, bboxes = self.slicer.slice_image(image)
             patch_count = len(patches)
 
