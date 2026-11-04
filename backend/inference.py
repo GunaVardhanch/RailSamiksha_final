@@ -123,7 +123,7 @@ class ProductionDefectDetector:
         import torch
 
         with _INFERENCE_LOCK:
-            with torch.no_grad():
+            with torch.inference_mode():
                 t_start = time.perf_counter()
                 self.pipeline.set_confidence(conf_threshold)
 
@@ -135,11 +135,12 @@ class ProductionDefectDetector:
 
                 h_orig, w_orig = img_bgr.shape[:2]
 
-                # Cap max dimension to 2048 to prevent CPU OOM / 60+ second timeouts on large images
+                # Cap max dimension to 1280 on CPU / cloud containers (Render 512MB RAM) to avoid OOM
                 max_dim = max(h_orig, w_orig)
+                target_max = 1280 if self.device == "cpu" else 2048
                 scale_ratio = 1.0
-                if max_dim > 2048:
-                    scale_ratio = 2048.0 / max_dim
+                if max_dim > target_max:
+                    scale_ratio = target_max / float(max_dim)
                     new_w = int(w_orig * scale_ratio)
                     new_h = int(h_orig * scale_ratio)
                     img_for_infer = cv2.resize(img_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
@@ -219,6 +220,11 @@ class ProductionDefectDetector:
                     })
 
         inference_ms = round((time.perf_counter() - t_start) * 1000, 1)
+
+        # Immediate memory clean-up on CPU
+        if self.device == "cpu":
+            import gc
+            gc.collect()
 
         # Convert annotated image to base64
         ok, a_buf = cv2.imencode(".jpg", annotated_bgr, [cv2.IMWRITE_JPEG_QUALITY, 85])

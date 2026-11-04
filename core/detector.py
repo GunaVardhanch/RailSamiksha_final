@@ -77,21 +77,27 @@ class RTDETRDetector:
     ) -> List[List[Dict[str, Any]]]:
         """
         Runs batched detection on multiple patches in chunks to prevent CPU memory spikes.
+        Uses chunk_size=1 on CPU to stay strictly within low-memory cloud container budgets (e.g. 512MB RAM).
         """
         if not patches:
             return []
 
+        import torch
+        import gc
+
         batch_detections = []
-        chunk_size = 4
+        chunk_size = 1 if self.device == "cpu" else 4
+
         for i in range(0, len(patches), chunk_size):
             chunk = patches[i:i + chunk_size]
-            results = self.model.predict(
-                source=chunk,
-                conf=self.conf_threshold,
-                imgsz=imgsz,
-                device=self.device,
-                verbose=False
-            )
+            with torch.inference_mode():
+                results = self.model.predict(
+                    source=chunk,
+                    conf=self.conf_threshold,
+                    imgsz=imgsz,
+                    device=self.device,
+                    verbose=False
+                )
 
             for res in results:
                 dets = []
@@ -111,6 +117,11 @@ class RTDETRDetector:
                             "severity": severity
                         })
                 batch_detections.append(dets)
+
+            # Explicit garbage collection after each chunk on CPU
+            if self.device == "cpu":
+                del results
+                gc.collect()
 
         return batch_detections
 

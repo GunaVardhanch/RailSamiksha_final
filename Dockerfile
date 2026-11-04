@@ -2,6 +2,10 @@ FROM python:3.10-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONMALLOC=malloc
+ENV OMP_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
 ENV PORT=8000
 
 # Install essential Linux graphics & vision dependencies for OpenCV & FFmpeg
@@ -31,3 +35,4 @@ COPY . .
 EXPOSE 8000
 
 CMD ["python", "backend/run_server.py"]
+
