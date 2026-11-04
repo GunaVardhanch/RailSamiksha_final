@@ -65,9 +65,10 @@ let currentUser = null;
 
 const savedBackendUrl = localStorage.getItem("RAILSAMIKSHA_BACKEND_URL");
 const isVercelHost = typeof window !== "undefined" && window.location && window.location.hostname && window.location.hostname.includes("vercel.app");
+const DEFAULT_CLOUD_BACKEND = "https://railsamiksha-backend.onrender.com";
 
 const BACKEND_CONFIG = {
-  baseUrl: savedBackendUrl || ((window.location && window.location.origin && window.location.origin.startsWith("http") && !isVercelHost) ? window.location.origin : "http://localhost:8000"),
+  baseUrl: savedBackendUrl || (isVercelHost ? window.location.origin : ((window.location && window.location.origin && window.location.origin.startsWith("http")) ? window.location.origin : "http://localhost:8000")),
   isOnline: false,
   device: "CPU",
   modelName: "RT-DETR-L (85 Epochs)",
@@ -82,10 +83,25 @@ async function checkBackendConnection() {
   const sqlBadge = document.getElementById("sqlBackendStatusBadge");
 
   try {
-    const res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/status`, {
-      method: "GET",
-      signal: AbortSignal.timeout ? AbortSignal.timeout(2500) : undefined
-    });
+    let res;
+    try {
+      res = await fetch(`${BACKEND_CONFIG.baseUrl}/api/status`, {
+        method: "GET",
+        signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined
+      });
+    } catch (e1) {
+      if (isVercelHost && BACKEND_CONFIG.baseUrl !== DEFAULT_CLOUD_BACKEND) {
+        res = await fetch(`${DEFAULT_CLOUD_BACKEND}/api/status`, {
+          method: "GET",
+          signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined
+        });
+        if (res && res.ok) {
+          BACKEND_CONFIG.baseUrl = DEFAULT_CLOUD_BACKEND;
+        }
+      } else {
+        throw e1;
+      }
+    }
 
     if (res.ok) {
       const data = await res.json();
